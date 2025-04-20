@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Upload, Copy, File, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const mockUniqueLink = "https://filelinker.app/download/abcd1234"; // placeholder
 

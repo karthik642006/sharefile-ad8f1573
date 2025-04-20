@@ -2,23 +2,44 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FileText } from "lucide-react";
+import { FileText, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
+// Mock authentication data
+const validUsers = [
+  { email: "john@example.com", password: "password123" },
+  { email: "jane@example.com", password: "password456" }
+];
+
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!username.trim() || !password) {
+    
+    if (!email.trim() || !password) {
       setError("Both fields are required.");
       return;
     }
+    
+    // Check if user exists and password matches
+    const user = validUsers.find(u => u.email === email.trim().toLowerCase());
+    
+    if (!user) {
+      setError("No account found with this email.");
+      return;
+    }
+    
+    if (user.password !== password) {
+      setError("Incorrect password.");
+      return;
+    }
+    
     setError("");
-    // Normally, authentication logic goes here
+    // In a real app, we would set the authenticated user in context/state here
     navigate("/dashboard");
   }
 
@@ -29,23 +50,47 @@ const Login = () => {
           <FileText size={24} /> Login
         </h2>
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-          <label className="font-medium text-gray-700">Username</label>
-          <Input
-            value={username}
-            placeholder="Enter your username"
-            onChange={e => setUsername(e.target.value)}
-          />
-          <label className="font-medium text-gray-700 mt-2">Password</label>
-          <Input
-            value={password}
-            type="password"
-            placeholder="Password"
-            onChange={e => setPassword(e.target.value)}
-          />
-          <Button type="submit" className="mt-4 bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-bold w-full rounded-lg">
+          <div className="space-y-1">
+            <label className="font-medium text-gray-700 flex items-center gap-2">
+              <Mail size={18} /> Email
+            </label>
+            <Input
+              value={email}
+              type="email"
+              placeholder="Enter your email"
+              onChange={e => {
+                setEmail(e.target.value);
+                setError("");
+              }}
+              className={error ? "border-red-400" : ""}
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <label className="font-medium text-gray-700 flex items-center gap-2">
+              <Lock size={18} /> Password
+            </label>
+            <Input
+              value={password}
+              type="password"
+              placeholder="Enter your password"
+              onChange={e => {
+                setPassword(e.target.value);
+                setError("");
+              }}
+              className={error ? "border-red-400" : ""}
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="mt-4 bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-bold w-full rounded-lg"
+          >
             Login
           </Button>
+          
           {error && <div className="text-red-500 text-sm mt-1">{error}</div>}
+          
           <div className="text-center mt-2">
             Don't have an account?{" "}
             <Link to="/signup" className="text-blue-500 hover:underline">Sign Up</Link>

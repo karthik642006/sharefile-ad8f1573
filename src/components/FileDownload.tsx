@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { Download, File, Share, UserIcon } from 'lucide-react';
+import { Download, File, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface FileDownloadProps {
   fileId: string;
@@ -29,29 +30,32 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
       try {
         setIsLoading(true);
         
-        // Get file data
-        const { data, error } = await supabase
+        // Get file data and join with profiles to get username
+        const { data: fileData, error: fileError } = await supabase
           .from('shared_files')
           .select('*, profiles:user_id(username)')
           .eq('id', fileId)
           .single();
           
-        if (error) throw error;
+        if (fileError) throw fileError;
         
         // Update download count
         await supabase
           .from('shared_files')
-          .update({ downloads: (data.downloads || 0) + 1 })
-          .eq('id', data.id);
+          .update({ downloads: (fileData.downloads || 0) + 1 })
+          .eq('id', fileData.id);
         
         // Get file URL
         const { data: { publicUrl } } = supabase.storage
           .from('shared-files')
-          .getPublicUrl(data.file_path);
+          .getPublicUrl(fileData.file_path);
+        
+        // Extract username from the joined profiles data
+        const username = fileData.profiles?.username;
           
         setFileData({
-          ...data,
-          username: data.profiles?.username,
+          ...fileData,
+          username,
           publicUrl
         });
       } catch (err: any) {

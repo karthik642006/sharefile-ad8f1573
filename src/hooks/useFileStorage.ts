@@ -24,15 +24,16 @@ export function useFileStorage() {
       const { error: uploadError } = await supabase.storage
         .from('shared-files')
         .upload(filePath, file, {
-          onUploadProgress: (progress) => {
-            const percent = progress.loaded / progress.total;
-            setProgress(percent);
-          }
+          cacheControl: '3600',
+          upsert: false
         });
 
       if (uploadError) {
         throw uploadError;
       }
+
+      // Update progress after upload completes
+      setProgress(1);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage

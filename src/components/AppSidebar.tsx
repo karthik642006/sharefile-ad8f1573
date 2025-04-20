@@ -8,17 +8,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { Home, User, Dashboard, Tag, Info } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+} from "@/components/ui/sidebar";
+import { Home, User, LayoutDashboard, Tag, Info } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const sidebarItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Profile", url: "/profile", icon: User },
-  { title: "Dashboard", url: "/dashboard", icon: Dashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Pricing", url: "/pricing", icon: Tag },
   { title: "About Us", url: "/about", icon: Info },
-]
+];
 
 export function AppSidebar() {
   const location = useLocation();
@@ -30,7 +30,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {sidebarItems.map((item) => (
-                <SidebarMenuItem key={item.title} asChild>
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link
                       to={item.url}
@@ -51,5 +51,5 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }

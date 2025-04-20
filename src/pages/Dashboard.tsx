@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from "react";
 import { Upload, Copy, File, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,8 @@ const Dashboard = () => {
   const [uploaded, setUploaded] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [fileDesc, setFileDesc] = useState("");
+  const [fileMsg, setFileMsg] = useState("");
 
   function handleDrag(e: React.DragEvent) {
     e.preventDefault();
@@ -26,6 +27,9 @@ const Dashboard = () => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setSelectedFile(e.dataTransfer.files[0]);
       setUploaded(false);
+      const file = e.dataTransfer.files[0];
+      setFileDesc(`A ${file.type || "file"} named ${file.name}`);
+      setFileMsg("");
     }
   }
 
@@ -33,11 +37,13 @@ const Dashboard = () => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
       setUploaded(false);
+      const file = e.target.files[0];
+      setFileDesc(`A ${file.type || "file"} named ${file.name}`);
+      setFileMsg("");
     }
   }
 
   function uploadAndGenerate() {
-    // Here, integrate with Supabase to upload file and get real link
     setUploaded(true);
   }
 
@@ -52,7 +58,6 @@ const Dashboard = () => {
       <div className="w-full max-w-2xl">
         <div className="bg-white rounded-xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-[#9b87f5] mb-6">Upload File</h2>
-          {/* Drag-and-drop box */}
           <form
             className="flex flex-col gap-5 mb-7"
             onDragOver={handleDrag}
@@ -79,8 +84,26 @@ const Dashboard = () => {
                 onChange={handleFileChange}
               />
             </div>
+            {selectedFile && (
+              <div className="flex flex-col md:flex-row gap-3 mt-2 w-full">
+                <div className="flex-1">
+                  <label className="block mb-1 text-sm font-semibold text-gray-600">Description</label>
+                  <Input
+                    value={fileDesc}
+                    readOnly
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block mb-1 text-sm font-semibold text-gray-600">Message</label>
+                  <Input
+                    value={fileMsg}
+                    onChange={e => setFileMsg(e.target.value)}
+                    placeholder="Add your message about the file (optional)"
+                  />
+                </div>
+              </div>
+            )}
           </form>
-          {/* Upload & Generate Link Button */}
           <Button
             className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-semibold px-4 py-2 rounded-lg transition-all hover-scale"
             onClick={uploadAndGenerate}
@@ -89,7 +112,6 @@ const Dashboard = () => {
             <Upload className="inline-block mr-2" size={18} />
             Upload & Generate Link
           </Button>
-          {/* After Upload: Show unique link, copy & download */}
           {uploaded && (
             <div className="mt-6 p-4 border rounded-lg bg-[#f8f6ff] flex flex-col gap-2 animate-fade-in">
               <div className="flex items-center gap-3">
@@ -115,6 +137,16 @@ const Dashboard = () => {
                 >
                   <Download className="mr-1" size={18} /> Download File
                 </a>
+              </div>
+              <div className="mt-2">
+                <div className="text-sm text-gray-600">
+                  <b>Description:</b> {fileDesc}
+                </div>
+                {fileMsg && (
+                  <div className="text-sm text-gray-700 mt-1">
+                    <b>Message:</b> {fileMsg}
+                  </div>
+                )}
               </div>
               {copySuccess && (
                 <span className="text-xs text-green-500">Copied!</span>

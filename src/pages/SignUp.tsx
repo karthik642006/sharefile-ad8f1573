@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileText, Mail, Lock, User, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-
-// Mock data for validation
-const usedUsernames = ["johndoe", "janedoe"];
-const usedEmails = ["john@example.com", "jane@example.com"];
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const SignUp = () => {
   const [username, setUsername] = useState("");
@@ -20,8 +18,9 @@ const SignUp = () => {
     password: "",
     confirmPassword: ""
   });
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const validateForm = () => {
     let valid = true;
@@ -36,8 +35,8 @@ const SignUp = () => {
     if (!username.trim()) {
       newErrors.username = "Username is required.";
       valid = false;
-    } else if (usedUsernames.includes(username.trim().toLowerCase())) {
-      newErrors.username = "That username is already taken.";
+    } else if (username.length < 3) {
+      newErrors.username = "Username must be at least 3 characters.";
       valid = false;
     }
 
@@ -48,9 +47,6 @@ const SignUp = () => {
       valid = false;
     } else if (!emailRegex.test(email)) {
       newErrors.email = "Please enter a valid email.";
-      valid = false;
-    } else if (usedEmails.includes(email.trim().toLowerCase())) {
-      newErrors.email = "This email is already registered.";
       valid = false;
     }
 
@@ -76,15 +72,39 @@ const SignUp = () => {
     return valid;
   };
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
     if (validateForm()) {
-      setShowSuccess(true);
-      // In a real app, we would register the user here
-      setTimeout(() => {
-        navigate("/profile");
-      }, 1200);
+      setIsLoading(true);
+      const { error } = await signUp(email, password, username);
+      
+      if (error) {
+        if (error.message.includes("already registered")) {
+          setErrors({
+            ...errors,
+            email: "This email is already registered."
+          });
+        } else if (error.message.includes("username")) {
+          setErrors({
+            ...errors,
+            username: "This username is already taken."
+          });
+        } else {
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+        setIsLoading(false);
+      } else {
+        toast({
+          title: "Sign up successful!",
+          description: "Check your email for the confirmation link.",
+        });
+        navigate("/login");
+      }
     }
   }
 
@@ -107,6 +127,7 @@ const SignUp = () => {
                 if (errors.username) setErrors({...errors, username: ""});
               }}
               className={errors.username ? "border-red-400" : ""}
+              disabled={isLoading}
             />
             {errors.username && <span className="text-sm text-red-500">{errors.username}</span>}
           </div>
@@ -124,6 +145,7 @@ const SignUp = () => {
                 if (errors.email) setErrors({...errors, email: ""});
               }}
               className={errors.email ? "border-red-400" : ""}
+              disabled={isLoading}
             />
             {errors.email && <span className="text-sm text-red-500">{errors.email}</span>}
           </div>
@@ -141,6 +163,7 @@ const SignUp = () => {
                 if (errors.password) setErrors({...errors, password: ""});
               }}
               className={errors.password ? "border-red-400" : ""}
+              disabled={isLoading}
             />
             {errors.password && <span className="text-sm text-red-500">{errors.password}</span>}
           </div>
@@ -158,6 +181,7 @@ const SignUp = () => {
                 if (errors.confirmPassword) setErrors({...errors, confirmPassword: ""});
               }}
               className={errors.confirmPassword ? "border-red-400" : ""}
+              disabled={isLoading}
             />
             {errors.confirmPassword && <span className="text-sm text-red-500">{errors.confirmPassword}</span>}
           </div>
@@ -165,20 +189,15 @@ const SignUp = () => {
           <Button 
             type="submit" 
             className="mt-4 bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-bold w-full rounded-lg"
+            disabled={isLoading}
           >
-            Sign Up
+            {isLoading ? "Signing up..." : "Sign Up"}
           </Button>
           
           <div className="text-center mt-2">
             Already have an account?{" "}
             <Link to="/login" className="text-blue-500 hover:underline">Login</Link>
           </div>
-          
-          {showSuccess && (
-            <div className="text-green-600 text-center mt-2">
-              Sign up successful! Redirecting…
-            </div>
-          )}
         </form>
       </div>
     </section>

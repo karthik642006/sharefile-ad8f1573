@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-
-const mockUniqueLink = "https://filelinker.app/download/abcd1234"; // placeholder
-const mockUser = { loggedIn: false }; // We'll use this to simulate authentication
+import { useAuth } from "@/contexts/AuthContext";
+import { useFileStorage } from "@/hooks/useFileStorage";
 
 const Dashboard = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -18,6 +17,9 @@ const Dashboard = () => {
   const [fileDescs, setFileDescs] = useState<string[]>([]);
   const [fileMsg, setFileMsg] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { uploadFile, isUploading, progress } = useFileStorage();
+  const [uploadedFileUrls, setUploadedFileUrls] = useState<{id: string, filename: string, publicUrl: string}[]>([]);
 
   function handleDrag(e: React.DragEvent) {
     e.preventDefault();
@@ -53,8 +55,8 @@ const Dashboard = () => {
     }
   }
 
-  function uploadAndGenerate() {
-    if (!mockUser.loggedIn) {
+  async function uploadAndGenerate() {
+    if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to upload files.",
@@ -64,12 +66,54 @@ const Dashboard = () => {
       return;
     }
     
-    setUploaded(true);
+    if (selectedFiles.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select at least one file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const uploadResults = [];
+    
+    for (const file of selectedFiles) {
+      try {
+        const { data, error } = await uploadFile(file);
+        if (error) throw error;
+        if (data) {
+          uploadResults.push({
+            id: data.id,
+            filename: data.filename,
+            publicUrl: data.publicUrl
+          });
+        }
+      } catch (err: any) {
+        toast({
+          title: "Upload Failed",
+          description: `Failed to upload ${file.name}: ${err.message}`,
+          variant: "destructive",
+        });
+      }
+    }
+    
+    if (uploadResults.length > 0) {
+      setUploadedFileUrls(uploadResults);
+      setUploaded(true);
+      toast({
+        title: "Upload Successful",
+        description: `Successfully uploaded ${uploadResults.length} file(s).`,
+      });
+    }
   }
 
-  function handleCopyLink() {
-    navigator.clipboard.writeText(mockUniqueLink);
+  function handleCopyLink(url: string) {
+    navigator.clipboard.writeText(url);
     setCopySuccess(true);
+    toast({
+      title: "Link Copied",
+      description: "File link copied to clipboard!",
+    });
     setTimeout(() => setCopySuccess(false), 1200);
   }
 
@@ -165,49 +209,58 @@ const Dashboard = () => {
           <Button
             className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-semibold px-4 py-2 rounded-lg transition-all hover-scale"
             onClick={uploadAndGenerate}
-            disabled={selectedFiles.length === 0}
+            disabled={selectedFiles.length === 0 || isUploading}
           >
-            <Upload className="inline-block mr-2" size={18} />
-            Upload & Generate Link
+            {isUploading ? (
+              <>
+                <Upload className="inline-block mr-2 animate-pulse" size={18} />
+                Uploading... {Math.round(progress * 100)}%
+              </>
+            ) : (
+              <>
+                <Upload className="inline-block mr-2" size={18} />
+                Upload & Generate Link
+              </>
+            )}
           </Button>
-          {uploaded && (
-            <div className="mt-6 p-4 border rounded-lg bg-[#f8f6ff] flex flex-col gap-2 animate-fade-in">
-              <div className="flex items-center gap-3">
-                <File className="text-[#9b87f5]" size={20} />
-                <span className="flex-1 break-all text-sm md:text-base">{mockUniqueLink}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleCopyLink}
-                  className="ml-1"
-                  aria-label="Copy link"
-                >
-                  <Copy className={copySuccess ? "text-green-500" : "text-gray-500"} size={18} />
-                </Button>
-              </div>
-              <div>
-                <a
-                  href={mockUniqueLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center mt-2 text-[#9b87f5] hover:underline"
-                  download
-                >
-                  <Download className="mr-1" size={18} /> Download Files
-                </a>
-              </div>
-              <div className="mt-2">
-                <div className="text-sm text-gray-600">
-                  <b>Files:</b> {selectedFiles.map(file => file.name).join(", ")}
-                </div>
-                {fileMsg && (
-                  <div className="text-sm text-gray-700 mt-1">
-                    <b>Message:</b> {fileMsg}
+          {uploaded && uploadedFileUrls.length > 0 && (
+            <div className="mt-6 p-4 border rounded-lg bg-[#f8f6ff] flex flex-col gap-4 animate-fade-in">
+              <h3 className="font-semibold">Your Shareable Links</h3>
+              {uploadedFileUrls.map((file, index) => (
+                <div key={index} className="flex flex-col gap-2 pb-3 border-b last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <File className="text-[#9b87f5]" size={20} />
+                    <span className="font-medium">{file.filename}</span>
                   </div>
-                )}
-              </div>
-              {copySuccess && (
-                <span className="text-xs text-green-500">Copied!</span>
+                  <div className="flex items-center gap-2 pl-7">
+                    <span className="flex-1 break-all text-xs md:text-sm text-gray-500">{file.publicUrl}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCopyLink(file.publicUrl)}
+                      className="ml-1"
+                      aria-label="Copy link"
+                    >
+                      <Copy className="text-gray-500" size={18} />
+                    </Button>
+                  </div>
+                  <div className="pl-7">
+                    <a
+                      href={file.publicUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center mt-1 text-[#9b87f5] hover:underline text-sm"
+                      download
+                    >
+                      <Download className="mr-1" size={16} /> Download File
+                    </a>
+                  </div>
+                </div>
+              ))}
+              {fileMsg && (
+                <div className="text-sm text-gray-700 mt-1">
+                  <b>Message:</b> {fileMsg}
+                </div>
               )}
             </div>
           )}

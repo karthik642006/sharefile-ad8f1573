@@ -13,9 +13,11 @@ import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopMenu } from "@/components/TopMenu";
-// New import pages:
+// Auth pages
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
+import { AuthProvider } from "./contexts/AuthContext";
+import { AppProvider } from "./contexts/AppContext";
 
 const queryClient = new QueryClient();
 
@@ -25,25 +27,29 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <TopMenu />
-        <SidebarProvider>
-          <div className="min-h-screen flex w-full bg-[#F1F1F1]">
-            <AppSidebar />
-            <main className="flex-1 min-h-screen">
-              <SidebarTrigger />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-        </SidebarProvider>
+        <AuthProvider>
+          <AppProvider>
+            <TopMenu />
+            <SidebarProvider>
+              <div className="min-h-screen flex w-full bg-[#F1F1F1]">
+                <AppSidebar />
+                <main className="flex-1 min-h-screen">
+                  <SidebarTrigger />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+            </SidebarProvider>
+          </AppProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

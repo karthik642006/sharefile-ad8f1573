@@ -1,16 +1,31 @@
-import { Search, File, Folder } from "lucide-react";
-import { useState } from "react";
+
+import { Search, File, Folder, User as UserIcon } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useUserSearch } from "@/hooks/useUserSearch";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Index = () => {
   const [userSearch, setUserSearch] = useState("");
   const [fileSearch, setFileSearch] = useState("");
+  const { searchUsers, results, isSearching, error } = useUserSearch();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (userSearch) {
+        searchUsers(userSearch);
+      }
+    }, 400); // Add debounce to prevent too many API calls
+
+    return () => clearTimeout(timer);
+  }, [userSearch]);
+
   return (
     <section className="min-h-screen flex flex-col md:flex-row items-stretch bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in transition-all">
       <div className="flex flex-1 flex-col items-center justify-start md:justify-center mt-10 md:mt-0 p-4 w-full">
         {/* Top search: User search */}
-        <form className="w-full max-w-xl mb-8">
+        <form className="w-full max-w-xl mb-8" onSubmit={(e) => e.preventDefault()}>
           <label className="block mb-1 font-semibold text-gray-600 text-lg">
             Search Usernames
           </label>
@@ -24,6 +39,36 @@ const Index = () => {
               onChange={e => setUserSearch(e.target.value)}
             />
           </div>
+          {isSearching && <div className="mt-2 text-sm text-gray-500">Searching...</div>}
+          {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
+          
+          {results.length > 0 && (
+            <div className="mt-3 bg-white border rounded-lg shadow-sm overflow-hidden">
+              <h3 className="px-4 py-2 bg-gray-50 font-medium text-gray-700 border-b">Users</h3>
+              <div className="max-h-60 overflow-y-auto">
+                {results.map((profile) => (
+                  <div key={profile.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b last:border-b-0">
+                    <Avatar className="h-8 w-8 bg-[#9b87f5]">
+                      <AvatarFallback className="text-white">
+                        {profile.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-medium">{profile.username}</p>
+                      <p className="text-xs text-gray-500">
+                        Joined {new Date(profile.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Link to={`/profile?id=${profile.id}`}>
+                      <Button size="sm" variant="outline" className="text-[#9b87f5]">
+                        <UserIcon size={14} className="mr-1" /> View
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </form>
         {/* Center search: File/folder search */}
         <form className="w-full max-w-xl mt-4 mb-10">

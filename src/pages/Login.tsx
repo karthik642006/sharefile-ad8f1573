@@ -3,21 +3,18 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileText, Mail, Lock } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-
-// Mock authentication data
-const validUsers = [
-  { email: "john@example.com", password: "password123" },
-  { email: "jane@example.com", password: "password456" }
-];
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     
     if (!email.trim() || !password) {
@@ -25,22 +22,21 @@ const Login = () => {
       return;
     }
     
-    // Check if user exists and password matches
-    const user = validUsers.find(u => u.email === email.trim().toLowerCase());
+    setIsLoading(true);
+    const { error: signInError } = await signIn(email, password);
     
-    if (!user) {
-      setError("No account found with this email.");
-      return;
+    if (signInError) {
+      if (signInError.message.includes("Invalid login")) {
+        setError("Email or password is incorrect.");
+      } else {
+        toast({
+          title: "Login Failed",
+          description: signInError.message,
+          variant: "destructive"
+        });
+      }
+      setIsLoading(false);
     }
-    
-    if (user.password !== password) {
-      setError("Incorrect password.");
-      return;
-    }
-    
-    setError("");
-    // In a real app, we would set the authenticated user in context/state here
-    navigate("/dashboard");
   }
 
   return (
@@ -63,6 +59,7 @@ const Login = () => {
                 setError("");
               }}
               className={error ? "border-red-400" : ""}
+              disabled={isLoading}
             />
           </div>
           
@@ -79,14 +76,16 @@ const Login = () => {
                 setError("");
               }}
               className={error ? "border-red-400" : ""}
+              disabled={isLoading}
             />
           </div>
           
           <Button 
             type="submit" 
             className="mt-4 bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-bold w-full rounded-lg"
+            disabled={isLoading}
           >
-            Login
+            {isLoading ? "Logging in..." : "Login"}
           </Button>
           
           {error && <div className="text-red-500 text-sm mt-1">{error}</div>}

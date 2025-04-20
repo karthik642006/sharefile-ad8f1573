@@ -30,14 +30,21 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
       try {
         setIsLoading(true);
         
-        // Get file data and join with profiles to get username
+        // Get file data
         const { data: fileData, error: fileError } = await supabase
           .from('shared_files')
-          .select('*, profiles:user_id(username)')
+          .select('*')
           .eq('id', fileId)
           .single();
           
         if (fileError) throw fileError;
+        
+        // Get username from profiles table
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', fileData.user_id)
+          .single();
         
         // Update download count
         await supabase
@@ -50,12 +57,9 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
           .from('shared-files')
           .getPublicUrl(fileData.file_path);
         
-        // Extract username from the joined profiles data
-        const username = fileData.profiles?.username;
-          
         setFileData({
           ...fileData,
-          username,
+          username: profileData?.username,
           publicUrl
         });
       } catch (err: any) {

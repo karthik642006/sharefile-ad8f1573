@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { User, Edit, File, Folder, Upload, Download } from "lucide-react";
+import { User, Edit, File, Folder, Upload, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,6 @@ const Profile = () => {
       try {
         setIsLoadingProfile(true);
         
-        // Get profile data
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -58,7 +57,6 @@ const Profile = () => {
         
         setProfileData(data);
         
-        // Fetch user's files if viewing the profile
         await fetchUserFiles(profileId);
       } catch (err: any) {
         setError(err.message);
@@ -72,7 +70,6 @@ const Profile = () => {
       try {
         setIsLoadingFiles(true);
         
-        // Get user's files
         const { data, error } = await supabase
           .from('shared_files')
           .select('*')
@@ -106,7 +103,6 @@ const Profile = () => {
 
   function handleBioSave() {
     setEditingBio(false);
-    // In a real implementation, save bio to the database
   }
 
   function handleProfileImgChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -116,7 +112,6 @@ const Profile = () => {
         setProfileImg(event.target?.result as string);
       };
       reader.readAsDataURL(e.target.files[0]);
-      // In a real implementation, upload to Supabase storage
     }
   }
 
@@ -159,7 +154,6 @@ const Profile = () => {
     <section className="flex flex-col items-center min-h-screen bg-gradient-to-b from-[#e5deff] to-[#f1f1f1] py-10 animate-fade-in">
       <div className="w-full max-w-lg">
         <div className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center gap-4">
-          {/* Profile picture with upload support */}
           <div
             className={`relative group ${isCurrentUser ? 'cursor-pointer' : ''}`}
             onClick={() => isCurrentUser && imgInput.current?.click()}
@@ -195,12 +189,10 @@ const Profile = () => {
               </div>
             )}
           </div>
-          {/* Username */}
           <h2 className="text-2xl font-bold text-[#9b87f5]">{profileData.username}</h2>
           <p className="text-sm text-gray-500">
             Member since {new Date(profileData.created_at).toLocaleDateString()}
           </p>
-          {/* Editable Bio */}
           <div className="w-full flex items-center justify-center gap-2">
             {editingBio ? (
               <>
@@ -238,7 +230,6 @@ const Profile = () => {
               <div className="py-8 text-center text-gray-500">No files uploaded yet</div>
             ) : (
               userFiles.map((file) => {
-                // Get the file's public URL
                 const { data } = supabase.storage
                   .from('shared-files')
                   .getPublicUrl(file.file_path);
@@ -262,7 +253,7 @@ const Profile = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                     >
-                      <Download size={18} />
+                      <FileDown size={18} />
                     </a>
                   </div>
                 );

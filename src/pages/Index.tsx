@@ -1,6 +1,7 @@
-
 import { Search, File, Folder } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const [userSearch, setUserSearch] = useState("");
@@ -55,6 +56,12 @@ const Index = () => {
               <li className="flex items-center gap-2"><Folder size={18} className="text-[#33C3F0]" /> Folder support</li>
               <li className="flex items-center gap-2"><Search size={18} className="text-[#7E69AB]" /> Public search & download</li>
             </ul>
+            {/* Get Started Button */}
+            <Link to="/signup" className="w-full flex justify-center mt-4">
+              <Button size="lg" className="w-full md:w-auto bg-[#9b87f5] hover:bg-[#7E69AB] text-white rounded-lg shadow-lg transition hover-scale font-bold">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

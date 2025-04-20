@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { TopMenu } from "@/components/TopMenu";
 
 const queryClient = new QueryClient();
 
@@ -20,8 +20,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      {/* Move BrowserRouter to wrap all routing-related components */}
       <BrowserRouter>
+        <TopMenu />
         <SidebarProvider>
           <div className="min-h-screen flex w-full bg-[#F1F1F1]">
             <AppSidebar />
@@ -33,7 +33,6 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/about" element={<About />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
@@ -45,4 +44,3 @@ const App = () => (
 );
 
 export default App;
-

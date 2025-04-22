@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
-import { User, Edit, File, Folder, Upload, FileDown } from "lucide-react";
+import { User, Edit, File, Folder, Upload, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface ProfileData {
@@ -30,8 +31,12 @@ const Profile = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [profilePassword, setProfilePassword] = useState("");
+  const [newProfilePassword, setNewProfilePassword] = useState("");
+  const [profilePasswordMode, setProfilePasswordMode] = useState<'view' | 'edit'>('view');
   const imgInput = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const { updateProfilePassword } = useAuth();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const profileId = queryParams.get('id') || (user ? user.id : null);
@@ -128,6 +133,27 @@ const Profile = () => {
       return <File className="text-green-600" size={20} />;
     } else {
       return <File className="text-[#7E69AB]" size={20} />;
+    }
+  }
+
+  function handleProfilePasswordEdit() {
+    if (!newProfilePassword) {
+      toast({
+        title: "Error",
+        description: "New profile password cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { error } = await updateProfilePassword(newProfilePassword);
+    
+    if (!error) {
+      toast({
+        title: "Success",
+        description: "Profile password updated successfully",
+      });
+      setProfilePasswordMode('view');
     }
   }
 
@@ -262,6 +288,54 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      {isCurrentUser && (
+        <div className="w-full max-w-lg mt-4">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center">
+              <KeyRound className="mr-2 text-[#9b87f5]" size={20} /> 
+              Profile Password
+            </h3>
+            
+            {profilePasswordMode === 'view' ? (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">********</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setProfilePasswordMode('edit')}
+                  className="text-[#9b87f5]"
+                >
+                  Change Password
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Input
+                  type="password"
+                  placeholder="Enter new profile password"
+                  value={newProfilePassword}
+                  onChange={(e) => setNewProfilePassword(e.target.value)}
+                  className="w-full"
+                />
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleProfilePasswordEdit} 
+                    className="bg-[#9b87f5] hover:bg-[#7E69AB]"
+                  >
+                    Save New Password
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setProfilePasswordMode('view')}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 };

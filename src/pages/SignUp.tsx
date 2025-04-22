@@ -1,8 +1,7 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FileText, Mail, Lock, User, Check } from "lucide-react";
+import { FileText, Mail, Lock, User, Check, KeyRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -12,11 +11,15 @@ const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [profilePassword, setProfilePassword] = useState("");
+  const [confirmProfilePassword, setConfirmProfilePassword] = useState("");
   const [errors, setErrors] = useState({
     username: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    profilePassword: "",
+    confirmProfilePassword: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,10 +31,11 @@ const SignUp = () => {
       username: "",
       email: "",
       password: "",
-      confirmPassword: ""
+      confirmPassword: "",
+      profilePassword: "",
+      confirmProfilePassword: ""
     };
 
-    // Validate username
     if (!username.trim()) {
       newErrors.username = "Username is required.";
       valid = false;
@@ -40,7 +44,6 @@ const SignUp = () => {
       valid = false;
     }
 
-    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
       newErrors.email = "Email is required.";
@@ -50,7 +53,6 @@ const SignUp = () => {
       valid = false;
     }
 
-    // Validate password
     if (!password) {
       newErrors.password = "Password is required.";
       valid = false;
@@ -59,7 +61,6 @@ const SignUp = () => {
       valid = false;
     }
 
-    // Validate confirm password
     if (!confirmPassword) {
       newErrors.confirmPassword = "Please confirm your password.";
       valid = false;
@@ -68,7 +69,23 @@ const SignUp = () => {
       valid = false;
     }
 
-    setErrors(newErrors);
+    if (!profilePassword) {
+      newErrors.profilePassword = "Profile password is required.";
+      valid = false;
+    } else if (profilePassword.length < 4) {
+      newErrors.profilePassword = "Profile password must be at least 4 characters.";
+      valid = false;
+    }
+
+    if (!confirmProfilePassword) {
+      newErrors.confirmProfilePassword = "Please confirm your profile password.";
+      valid = false;
+    } else if (confirmProfilePassword !== profilePassword) {
+      newErrors.confirmProfilePassword = "Profile passwords do not match.";
+      valid = false;
+    }
+
+    setErrors({...errors, ...newErrors});
     return valid;
   };
 
@@ -77,7 +94,7 @@ const SignUp = () => {
     
     if (validateForm()) {
       setIsLoading(true);
-      const { error } = await signUp(email, password, username);
+      const { error } = await signUp(email, password, username, profilePassword);
       
       if (error) {
         if (error.message.includes("already registered")) {
@@ -101,7 +118,7 @@ const SignUp = () => {
       } else {
         toast({
           title: "Sign up successful!",
-          description: "Check your email for the confirmation link.",
+          description: "Your account is ready. You can now log in.",
         });
         navigate("/login");
       }
@@ -184,6 +201,42 @@ const SignUp = () => {
               disabled={isLoading}
             />
             {errors.confirmPassword && <span className="text-sm text-red-500">{errors.confirmPassword}</span>}
+          </div>
+          
+          <div className="space-y-1">
+            <label className="font-medium text-gray-700 flex items-center gap-2">
+              <KeyRound size={18} /> Profile Password
+            </label>
+            <Input
+              value={profilePassword}
+              type="password"
+              placeholder="Create a profile password"
+              onChange={e => {
+                setProfilePassword(e.target.value);
+                if (errors.profilePassword) setErrors({...errors, profilePassword: ""});
+              }}
+              className={errors.profilePassword ? "border-red-400" : ""}
+              disabled={isLoading}
+            />
+            {errors.profilePassword && <span className="text-sm text-red-500">{errors.profilePassword}</span>}
+          </div>
+          
+          <div className="space-y-1">
+            <label className="font-medium text-gray-700 flex items-center gap-2">
+              <Check size={18} /> Confirm Profile Password
+            </label>
+            <Input
+              value={confirmProfilePassword}
+              type="password"
+              placeholder="Confirm profile password"
+              onChange={e => {
+                setConfirmProfilePassword(e.target.value);
+                if (errors.confirmProfilePassword) setErrors({...errors, confirmProfilePassword: ""});
+              }}
+              className={errors.confirmProfilePassword ? "border-red-400" : ""}
+              disabled={isLoading}
+            />
+            {errors.confirmProfilePassword && <span className="text-sm text-red-500">{errors.confirmProfilePassword}</span>}
           </div>
           
           <Button 

@@ -1,30 +1,71 @@
-
-import { Search, File, Folder, User as UserIcon } from "lucide-react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { Search, File, Folder, User as UserIcon, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserSearch } from "@/hooks/useUserSearch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [userSearch, setUserSearch] = useState("");
-  const [fileSearch, setFileSearch] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState<{id: string, username: string} | null>(null);
+  const [profilePassword, setProfilePassword] = useState("");
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const { searchUsers, results, isSearching, error } = useUserSearch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (userSearch) {
         searchUsers(userSearch);
       }
-    }, 400); // Add debounce to prevent too many API calls
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [userSearch]);
 
+  const handleViewProfile = async (profile: {id: string, username: string}) => {
+    setSelectedProfile(profile);
+    setIsPasswordDialogOpen(true);
+  };
+
+  const verifyProfilePassword = async () => {
+    if (!selectedProfile) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('profile_password')
+        .eq('id', selectedProfile.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data.profile_password === profilePassword) {
+        setIsPasswordDialogOpen(false);
+        navigate(`/profile?id=${selectedProfile.id}`);
+      } else {
+        toast({
+          title: "Access Denied",
+          description: "Incorrect profile password",
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Could not verify profile password",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <section className="min-h-screen flex flex-col md:flex-row items-stretch bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in transition-all">
       <div className="flex flex-1 flex-col items-center justify-start md:justify-center mt-10 md:mt-0 p-4 w-full">
-        {/* Top search: User search */}
         <form className="w-full max-w-xl mb-8" onSubmit={(e) => e.preventDefault()}>
           <label className="block mb-1 font-semibold text-gray-600 text-lg">
             Search Usernames
@@ -70,7 +111,6 @@ const Index = () => {
             </div>
           )}
         </form>
-        {/* Center search: File/folder search */}
         <form className="w-full max-w-xl mt-4 mb-10">
           <label className="block mb-1 font-semibold text-gray-600 text-lg">
             Search Files, Folders, or Documents
@@ -87,7 +127,6 @@ const Index = () => {
             <File className="ml-2 text-[#7E69AB]" size={20} />
           </div>
         </form>
-        {/* Feature section */}
         <div className="w-full max-w-xl mt-2 mb-16">
           <div className="rounded-xl bg-white/90 shadow-md p-6 flex flex-col items-center gap-4">
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#9b87f5] mb-2">
@@ -101,7 +140,6 @@ const Index = () => {
               <li className="flex items-center gap-2"><Folder size={18} className="text-[#33C3F0]" /> Folder support</li>
               <li className="flex items-center gap-2"><Search size={18} className="text-[#7E69AB]" /> Public search & download</li>
             </ul>
-            {/* Get Started Button */}
             <Link to="/signup" className="w-full flex justify-center mt-4">
               <Button size="lg" className="w-full md:w-auto bg-[#9b87f5] hover:bg-[#7E69AB] text-white rounded-lg shadow-lg transition hover-scale font-bold">
                 Get Started
@@ -110,6 +148,30 @@ const Index = () => {
           </div>
         </div>
       </div>
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Profile Password</DialogTitle>
+            <DialogDescription>
+              Enter the profile password to view {selectedProfile?.username}'s profile
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="password"
+              placeholder="Profile Password"
+              value={profilePassword}
+              onChange={(e) => setProfilePassword(e.target.value)}
+            />
+            <Button 
+              onClick={verifyProfilePassword} 
+              className="w-full bg-[#9b87f5] hover:bg-[#7E69AB]"
+            >
+              Verify Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

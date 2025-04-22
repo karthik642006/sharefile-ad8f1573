@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { User, Edit, File, Folder, Upload, KeyRound } from "lucide-react";
+import { User, Edit, File, Folder, Upload, KeyRound, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,7 +136,7 @@ const Profile = () => {
     }
   }
 
-  function handleProfilePasswordEdit() {
+  async function handleProfilePasswordEdit() {
     if (!newProfilePassword) {
       toast({
         title: "Error",

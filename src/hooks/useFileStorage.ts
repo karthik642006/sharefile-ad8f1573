@@ -16,10 +16,10 @@ export function useFileStorage() {
     try {
       setIsUploading(true);
       setProgress(0);
-      
+
       // Generate a unique file path
       const filePath = `${user.id}/${new Date().getTime()}-${file.name}`;
-      
+
       // Upload to Storage
       const { error: uploadError } = await supabase.storage
         .from('shared-files')
@@ -32,7 +32,6 @@ export function useFileStorage() {
         throw uploadError;
       }
 
-      // Update progress after upload completes
       setProgress(1);
 
       // Get public URL
@@ -40,13 +39,15 @@ export function useFileStorage() {
         .from('shared-files')
         .getPublicUrl(filePath);
 
-      // Save file metadata to database
+      // Save file metadata to database (expires_at in 5 mins)
+      const expires_at = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       const { error: dbError, data: fileData } = await supabase
         .from('shared_files')
         .insert({
           user_id: user.id,
           filename: file.name,
-          file_path: filePath
+          file_path: filePath,
+          expires_at
         })
         .select()
         .single();
@@ -91,9 +92,32 @@ export function useFileStorage() {
     }
   };
 
+  // NEW: Delete a file (from storage + db)
+  const deleteFile = async (fileRow: { id: string, file_path: string }) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('shared-files')
+        .remove([fileRow.file_path]);
+      if (storageError) throw storageError;
+
+      // Delete from db
+      const { error: dbError } = await supabase
+        .from('shared_files')
+        .delete()
+        .eq('id', fileRow.id);
+      if (dbError) throw dbError;
+
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   return {
     uploadFile,
     getSharedFile,
+    deleteFile,
     isUploading,
     progress
   };

@@ -1,5 +1,6 @@
+
 import React, { useRef, useState, useEffect } from "react";
-import { User, Edit, File, Folder, Upload, KeyRound, FileDown } from "lucide-react";
+import { User, Edit, File, Folder, Upload, KeyRound, FileDown, Trash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,17 @@ import { useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useFileStorage } from "@/hooks/useFileStorage";
+
+// NEW: Utility for time left
+function getTimeLeft(expires_at?: string | null) {
+  if (!expires_at) return "Expired";
+  const ms = new Date(expires_at).getTime() - Date.now();
+  if (ms <= 0) return "Expired";
+  const min = Math.floor(ms / 60000);
+  const sec = Math.floor((ms % 60000) / 1000);
+  return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+}
 
 interface ProfileData {
   id: string;
@@ -20,6 +32,7 @@ interface FileData {
   created_at: string;
   downloads: number;
   file_path: string;
+  expires_at: string | null;
 }
 
 const Profile = () => {
@@ -34,34 +47,42 @@ const Profile = () => {
   const [profilePassword, setProfilePassword] = useState("");
   const [newProfilePassword, setNewProfilePassword] = useState("");
   const [profilePasswordMode, setProfilePasswordMode] = useState<'view' | 'edit'>('view');
+  const [now, setNow] = useState(Date.now()); // For live countdown timer
   const imgInput = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { updateProfilePassword } = useAuth();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const profileId = queryParams.get('id') || (user ? user.id : null);
+  const { deleteFile } = useFileStorage();
 
+  // Periodically update 'now' for timers
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch profile & files
   useEffect(() => {
     if (!profileId) {
       setError("No profile specified");
       setIsLoadingProfile(false);
       return;
     }
-    
     async function fetchProfileData() {
       try {
         setIsLoadingProfile(true);
-        
+
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', profileId)
           .single();
-          
+
         if (error) throw error;
-        
+
         setProfileData(data);
-        
+
         await fetchUserFiles(profileId);
       } catch (err: any) {
         setError(err.message);
@@ -70,19 +91,19 @@ const Profile = () => {
         setIsLoadingProfile(false);
       }
     }
-    
+
     async function fetchUserFiles(userId: string) {
       try {
         setIsLoadingFiles(true);
-        
+
         const { data, error } = await supabase
           .from('shared_files')
           .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
-          
+
         if (error) throw error;
-        
+
         setUserFiles(data || []);
       } catch (err) {
         console.error("Error fetching files:", err);
@@ -90,8 +111,11 @@ const Profile = () => {
         setIsLoadingFiles(false);
       }
     }
-    
+
     fetchProfileData();
+    // refresh every 15 seconds to catch deleted/expired files
+    const refreshInterval = setInterval(() => fetchUserFiles(profileId), 15000);
+    return () => clearInterval(refreshInterval);
   }, [profileId]);
 
   function handleBioEdit() {
@@ -122,7 +146,7 @@ const Profile = () => {
 
   function getFileIcon(filename: string) {
     const extension = filename.split('.').pop()?.toLowerCase();
-    
+
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
       return <File className="text-blue-500" size={20} />;
     } else if (['pdf'].includes(extension || '')) {
@@ -147,13 +171,31 @@ const Profile = () => {
     }
 
     const { error } = await updateProfilePassword(newProfilePassword);
-    
+
     if (!error) {
       toast({
         title: "Success",
         description: "Profile password updated successfully",
       });
       setProfilePasswordMode('view');
+    }
+  }
+
+  // NEW: Delete file
+  async function handleDeleteFile(file: FileData) {
+    if (!user || user.id !== profileId) return;
+    const confirm = window.confirm("Are you sure you want to delete this file?");
+    if (!confirm) return;
+    const { error } = await deleteFile({ id: file.id, file_path: file.file_path });
+    if (!error) {
+      setUserFiles(prev => prev.filter(f => f.id !== file.id));
+      toast({ title: "Deleted", description: "File deleted successfully." });
+    } else {
+      toast({
+        title: "Delete Failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
     }
   }
 
@@ -256,14 +298,18 @@ const Profile = () => {
               <div className="py-8 text-center text-gray-500">No files uploaded yet</div>
             ) : (
               userFiles.map((file) => {
+                // Only show if file not expired
+                const expired = file.expires_at && new Date(file.expires_at).getTime() < now;
+                if (expired) return null;
+
                 const { data } = supabase.storage
                   .from('shared-files')
                   .getPublicUrl(file.file_path);
-                
+
                 return (
                   <div
                     key={file.id}
-                    className="flex items-center gap-3 bg-[#f8f6ff] rounded-md px-4 py-2 border"
+                    className="flex items-center gap-3 bg-[#f8f6ff] rounded-md px-4 py-2 border relative"
                   >
                     {getFileIcon(file.filename)}
                     <div className="flex-1">
@@ -271,16 +317,28 @@ const Profile = () => {
                       <div className="text-xs text-gray-500">
                         {file.downloads} downloads • {new Date(file.created_at).toLocaleDateString()}
                       </div>
+                      <div className="flex items-center gap-1 mt-1 text-sm text-orange-500">
+                        <Clock size={14} />
+                        <span>
+                          Auto-deletes in {getTimeLeft(file.expires_at)}
+                        </span>
+                      </div>
                     </div>
-                    <a 
-                      href={data.publicUrl} 
-                      download 
+                    <a
+                      href={data.publicUrl}
+                      download
                       className="text-[#9b87f5] hover:underline text-sm"
-                      target="_blank" 
+                      target="_blank"
                       rel="noopener noreferrer"
+                      title="Download file (will auto-delete after 5min from upload)"
                     >
                       <FileDown size={18} />
                     </a>
+                    {isCurrentUser && (
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteFile(file)} className="text-red-500" aria-label="Delete file">
+                        <Trash size={18}/>
+                      </Button>
+                    )}
                   </div>
                 );
               })
@@ -295,7 +353,6 @@ const Profile = () => {
               <KeyRound className="mr-2 text-[#9b87f5]" size={20} /> 
               Profile Password
             </h3>
-            
             {profilePasswordMode === 'view' ? (
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">********</span>

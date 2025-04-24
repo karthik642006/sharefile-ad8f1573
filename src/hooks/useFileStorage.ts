@@ -39,8 +39,8 @@ export function useFileStorage() {
         .from('shared-files')
         .getPublicUrl(filePath);
 
-      // Save file metadata to database (expires_at in 5 mins)
-      const expires_at = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      // Save file metadata to database (expires_at in 24 hours)
+      const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const { error: dbError, data: fileData } = await supabase
         .from('shared_files')
         .insert({

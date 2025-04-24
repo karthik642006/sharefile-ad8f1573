@@ -7,23 +7,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useFileStorage } from "@/hooks/useFileStorage";
 
-// NEW: Utility for time left
+// Updated: Utility for time left (now for 24 hours)
 function getTimeLeft(expires_at?: string | null) {
   if (!expires_at) return "Expired";
   const ms = new Date(expires_at).getTime() - Date.now();
   if (ms <= 0) return "Expired";
-  const min = Math.floor(ms / 60000);
-  const sec = Math.floor((ms % 60000) / 1000);
-  return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+  
+  // For 24h format, show hours and minutes
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  return `${hours}h ${minutes}m`;
 }
 
 interface ProfileData {
   id: string;
   username: string;
   created_at: string;
+  avatar_url?: string;
 }
 
 interface FileData {
@@ -82,6 +85,14 @@ const Profile = () => {
         if (error) throw error;
 
         setProfileData(data);
+        
+        // Get the avatar URL if it exists
+        if (data.avatar_url) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('shared-files')
+            .getPublicUrl(data.avatar_url);
+          setProfileImg(publicUrl);
+        }
 
         await fetchUserFiles(profileId);
       } catch (err: any) {
@@ -134,13 +145,49 @@ const Profile = () => {
     setEditingBio(false);
   }
 
-  function handleProfileImgChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
+  async function handleProfileImgChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files || !e.target.files[0] || !user) return;
+    
+    const file = e.target.files[0];
+    
+    try {
+      // Show local preview first
       const reader = new FileReader();
       reader.onload = (event) => {
         setProfileImg(event.target?.result as string);
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
+
+      // Upload to storage
+      const filePath = `avatars/${user.id}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('shared-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: filePath })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile picture has been updated"
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   }
 
@@ -181,7 +228,7 @@ const Profile = () => {
     }
   }
 
-  // NEW: Delete file
+  // Delete file
   async function handleDeleteFile(file: FileData) {
     if (!user || user.id !== profileId) return;
     const confirm = window.confirm("Are you sure you want to delete this file?");
@@ -219,9 +266,9 @@ const Profile = () => {
   const isCurrentUser = user && user.id === profileData.id;
 
   return (
-    <section className="flex flex-col items-center min-h-screen bg-gradient-to-b from-[#e5deff] to-[#f1f1f1] py-10 animate-fade-in">
+    <section className="flex flex-col items-center min-h-screen w-full bg-gradient-to-b from-[#e5deff] to-[#f1f1f1] py-10 animate-fade-in px-4 sm:px-6 md:px-8">
       <div className="w-full max-w-lg">
-        <div className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center gap-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 flex flex-col items-center gap-4">
           <div
             className={`relative group ${isCurrentUser ? 'cursor-pointer' : ''}`}
             onClick={() => isCurrentUser && imgInput.current?.click()}
@@ -229,11 +276,12 @@ const Profile = () => {
           >
             <div className="rounded-full overflow-hidden w-24 h-24 border-4 border-[#dfd8fc] bg-gray-50 flex items-center justify-center transition hover:shadow-lg hover-scale">
               {profileImg ? (
-                <img
-                  src={profileImg}
-                  alt="Profile"
-                  className="object-cover w-full h-full"
-                />
+                <Avatar className="w-full h-full">
+                  <AvatarImage src={profileImg} alt="Profile" className="object-cover w-full h-full" />
+                  <AvatarFallback className="text-2xl text-white font-bold bg-[#9b87f5]">
+                    {profileData.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
               ) : (
                 <Avatar className="w-full h-full bg-[#9b87f5]">
                   <AvatarFallback className="text-2xl text-white font-bold">
@@ -324,21 +372,29 @@ const Profile = () => {
                         </span>
                       </div>
                     </div>
-                    <a
-                      href={data.publicUrl}
-                      download
-                      className="text-[#9b87f5] hover:underline text-sm"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Download file (will auto-delete after 5min from upload)"
-                    >
-                      <FileDown size={18} />
-                    </a>
-                    {isCurrentUser && (
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteFile(file)} className="text-red-500" aria-label="Delete file">
-                        <Trash size={18}/>
-                      </Button>
-                    )}
+                    <div className="flex items-center">
+                      <a
+                        href={data.publicUrl}
+                        download
+                        className="text-[#9b87f5] hover:underline p-2"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Download file (will auto-delete after 24h from upload)"
+                      >
+                        <FileDown size={18} />
+                      </a>
+                      {isCurrentUser && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteFile(file)} 
+                          className="text-red-500" 
+                          aria-label="Delete file"
+                        >
+                          <Trash size={18}/>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 );
               })

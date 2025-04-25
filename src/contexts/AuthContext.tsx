@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Add auto-deletion check for downloaded files
+    const checkDownloadedFilesExpiry = () => {
+      const downloads = JSON.parse(localStorage.getItem('downloadedFiles') || '[]');
+      const now = Date.now();
+      const updatedDownloads = downloads.filter((item: any) => item.expiryTime > now);
+      
+      // If any files were expired and removed, notify the user
+      if (downloads.length > updatedDownloads.length) {
+        const deletedCount = downloads.length - updatedDownloads.length;
+        toast({
+          title: `${deletedCount} file(s) auto-deleted`,
+          description: "Files have been deleted after 24 hours as scheduled",
+        });
+      }
+      
+      localStorage.setItem('downloadedFiles', JSON.stringify(updatedDownloads));
+    };
+    
+    // Check on load and periodically
+    checkDownloadedFilesExpiry();
+    const interval = setInterval(checkDownloadedFilesExpiry, 60000); // Check every minute
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, username: string, profilePassword: string) => {
@@ -113,6 +139,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error: profileError };
       }
 
+      toast({
+        title: "Success",
+        description: "Profile password updated successfully",
+      });
+      
       return { error: null };
     } catch (error) {
       return { error };

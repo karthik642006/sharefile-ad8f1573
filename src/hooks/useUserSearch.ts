@@ -1,12 +1,13 @@
 
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
 interface Profile {
   id: string;
   username: string;
   created_at: string;
-  avatar_url?: string | null;  // Added optional avatar_url
+  avatar_url?: string | null;
 }
 
 export function useUserSearch() {

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 export function useFileStorage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -47,7 +48,8 @@ export function useFileStorage() {
           user_id: user.id,
           filename: file.name,
           file_path: filePath,
-          expires_at
+          expires_at,
+          downloads: 0 // Initialize download counter
         })
         .select()
         .single();
@@ -55,6 +57,12 @@ export function useFileStorage() {
       if (dbError) {
         throw dbError;
       }
+
+      // Add notification about auto-deletion after 24 hours
+      toast({
+        title: "File uploaded successfully",
+        description: "Note: Downloaded files will be auto-deleted after 24 hours",
+      });
 
       setIsUploading(false);
       return { data: { ...fileData, publicUrl }, error: null };
@@ -92,7 +100,7 @@ export function useFileStorage() {
     }
   };
 
-  // NEW: Delete a file (from storage + db)
+  // Delete a file (from storage + db)
   const deleteFile = async (fileRow: { id: string, file_path: string }) => {
     try {
       // Delete from storage

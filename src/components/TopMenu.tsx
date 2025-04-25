@@ -17,11 +17,11 @@ export function TopMenu() {
   const { user } = useAuth();
 
   return (
-    <nav className="flex flex-col md:flex-row items-center px-5 bg-white shadow-sm py-3">
-      <div className="flex items-center text-[#9b87f5] font-extrabold text-2xl mb-3 md:mb-0 md:mr-8">
-        <Menu className="mr-2" size={24} /> FileLinker
+    <nav className="flex items-center px-5 bg-white shadow-sm py-3">
+      <div className="flex items-center text-[#9b87f5] font-extrabold text-xl md:text-2xl mr-auto">
+        <Menu className="mr-2" size={24} /> sharefile.lovable.app
       </div>
-      <div className="flex flex-wrap justify-center gap-2 md:gap-3 items-center w-full md:w-auto">
+      <div className="flex flex-wrap gap-1 md:gap-3 items-center">
         {menuItems.map(item => (
           <Link key={item.title} to={item.url}>
             <Button 

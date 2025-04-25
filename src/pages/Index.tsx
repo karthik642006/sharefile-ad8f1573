@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from "react";
-import { Search, File, Folder, User as UserIcon, Lock } from "lucide-react";
+import { Search, File, Folder, User as UserIcon, Lock, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserSearch } from "@/hooks/useUserSearch";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 
 const Index = () => {
   const [userSearch, setUserSearch] = useState("");
@@ -65,8 +65,17 @@ const Index = () => {
     }
   };
 
+  const appUrl = window.location.origin;
+  const shareAppLink = async () => {
+    await navigator.clipboard.writeText(appUrl);
+    toast({
+      title: "App Link Copied!",
+      description: "The link to FileLinker app has been copied to your clipboard",
+    });
+  };
+
   return (
-    <section className="min-h-screen flex flex-col md:flex-row items-stretch bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in transition-all">
+    <section className="min-h-screen flex flex-col md:flex-row items-stretch bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in transition-all w-full">
       <div className="flex flex-1 flex-col items-center justify-start md:justify-center mt-10 md:mt-0 p-4 w-full">
         <form className="w-full max-w-xl mb-8" onSubmit={(e) => e.preventDefault()}>
           <label className="block mb-1 font-semibold text-gray-600 text-lg">
@@ -92,9 +101,16 @@ const Index = () => {
                 {results.map((profile) => (
                   <div key={profile.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b last:border-b-0">
                     <Avatar className="h-8 w-8 bg-[#9b87f5]">
-                      <AvatarFallback className="text-white">
-                        {profile.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
+                      {profile.avatar_url ? (
+                        <AvatarImage 
+                          src={supabase.storage.from('shared-files').getPublicUrl(profile.avatar_url).data.publicUrl} 
+                          alt={profile.username} 
+                        />
+                      ) : (
+                        <AvatarFallback className="text-white">
+                          {profile.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-medium">{profile.username}</p>
@@ -145,12 +161,21 @@ const Index = () => {
               <li className="flex items-center gap-2"><Folder size={18} className="text-[#33C3F0]" /> Folder support</li>
               <li className="flex items-center gap-2"><Search size={18} className="text-[#7E69AB]" /> Public search & download</li>
             </ul>
-            <div className="w-full flex justify-center mt-4">
-              <Link to="/signup">
+            <div className="w-full flex flex-col md:flex-row justify-center items-center gap-4 mt-4">
+              <RouterLink to="/signup" className="w-full md:w-auto">
                 <Button size="lg" className="w-full md:w-auto bg-[#9b87f5] hover:bg-[#7E69AB] text-white rounded-lg shadow-lg transition hover-scale font-bold">
                   Get Started
                 </Button>
-              </Link>
+              </RouterLink>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="w-full md:w-auto flex items-center gap-2"
+                onClick={shareAppLink}
+              >
+                <Link size={18} />
+                Share App Link
+              </Button>
             </div>
           </div>
         </div>

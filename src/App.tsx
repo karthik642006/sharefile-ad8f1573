@@ -31,9 +31,9 @@ const App = () => (
           <AppProvider>
             <TopMenu />
             <SidebarProvider>
-              <div className="min-h-screen flex w-full bg-[#F1F1F1]">
+              <div className="min-h-screen flex flex-col w-full bg-[#F1F1F1]">
                 <AppSidebar />
-                <main className="flex-1 min-h-screen">
+                <main className="flex-1 min-h-screen w-full max-w-[100vw] overflow-x-hidden">
                   <SidebarTrigger />
                   <Routes>
                     <Route path="/" element={<Index />} />

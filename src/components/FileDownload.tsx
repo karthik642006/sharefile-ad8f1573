@@ -1,9 +1,10 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Download, File, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { getShareableLink } from '@/utils/shareUtils';
+import { toast } from '@/hooks/use-toast';
 
 interface FileDownloadProps {
   fileId: string;
@@ -18,6 +19,7 @@ interface FileData {
   user_id: string;
   username?: string;
   publicUrl: string;
+  expires_at?: string;
 }
 
 const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
@@ -30,7 +32,6 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
       try {
         setIsLoading(true);
         
-        // Get file data
         const { data: fileData, error: fileError } = await supabase
           .from('shared_files')
           .select('*')
@@ -39,20 +40,17 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
           
         if (fileError) throw fileError;
         
-        // Get username from profiles table
         const { data: profileData } = await supabase
           .from('profiles')
           .select('username')
           .eq('id', fileData.user_id)
           .single();
         
-        // Update download count
         await supabase
           .from('shared_files')
           .update({ downloads: (fileData.downloads || 0) + 1 })
           .eq('id', fileData.id);
         
-        // Get file URL
         const { data: { publicUrl } } = supabase.storage
           .from('shared-files')
           .getPublicUrl(fileData.file_path);
@@ -73,12 +71,14 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
     fetchFileData();
   }, [fileId]);
 
-  function handleCopyLink() {
-    if (!fileData) return;
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    alert('Link copied to clipboard!');
-  }
+  const handleShare = async () => {
+    const shareableLink = getShareableLink(fileId);
+    await navigator.clipboard.writeText(shareableLink);
+    toast({
+      title: "Link Copied!",
+      description: "The shareable link has been copied to your clipboard",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -124,15 +124,18 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
           </Button>
         </a>
         
-        <Button variant="outline" onClick={handleCopyLink}>
+        <Button variant="outline" onClick={handleShare}>
           <Share className="mr-2" size={18} />
-          Copy Shareable Link
+          Share File
         </Button>
       </div>
       
-      <div className="mt-6 pt-4 border-t text-sm text-gray-500">
-        <p>File shared on {new Date(fileData.created_at).toLocaleDateString()}</p>
-      </div>
+      {fileData.expires_at && (
+        <div className="mt-6 pt-4 border-t text-sm text-gray-500">
+          <p>File shared on {new Date(fileData.created_at).toLocaleDateString()}</p>
+          <p>Available until {new Date(fileData.expires_at).toLocaleString()}</p>
+        </div>
+      )}
     </div>
   );
 };

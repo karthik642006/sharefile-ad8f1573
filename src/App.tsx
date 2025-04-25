@@ -10,10 +10,10 @@ import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import Download from "./pages/Download";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopMenu } from "@/components/TopMenu";
-// Auth pages
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -43,6 +43,7 @@ const App = () => (
                     <Route path="/about" element={<About />} />
                     <Route path="/signup" element={<SignUp />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/download/:fileId" element={<Download />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

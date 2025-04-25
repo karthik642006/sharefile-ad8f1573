@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from "react";
 import { User, Edit, File, Folder, Upload, KeyRound, FileDown, Trash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,14 +8,13 @@ import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useFileStorage } from "@/hooks/useFileStorage";
+import { Tables } from "@/integrations/supabase/types";
 
-// Updated: Utility for time left (now for 24 hours)
 function getTimeLeft(expires_at?: string | null) {
   if (!expires_at) return "Expired";
   const ms = new Date(expires_at).getTime() - Date.now();
   if (ms <= 0) return "Expired";
   
-  // For 24h format, show hours and minutes
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   return `${hours}h ${minutes}m`;
@@ -39,7 +37,7 @@ interface FileData {
 }
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [profileData, setProfileData] = useState<Tables['profiles']>(null);
   const [userFiles, setUserFiles] = useState<FileData[]>([]);
   const [bio, setBio] = useState("I share photos, docs, and more!");
   const [editingBio, setEditingBio] = useState(false);
@@ -50,7 +48,7 @@ const Profile = () => {
   const [profilePassword, setProfilePassword] = useState("");
   const [newProfilePassword, setNewProfilePassword] = useState("");
   const [profilePasswordMode, setProfilePasswordMode] = useState<'view' | 'edit'>('view');
-  const [now, setNow] = useState(Date.now()); // For live countdown timer
+  const [now, setNow] = useState(Date.now());
   const imgInput = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { updateProfilePassword } = useAuth();
@@ -59,13 +57,11 @@ const Profile = () => {
   const profileId = queryParams.get('id') || (user ? user.id : null);
   const { deleteFile } = useFileStorage();
 
-  // Periodically update 'now' for timers
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch profile & files
   useEffect(() => {
     if (!profileId) {
       setError("No profile specified");
@@ -86,7 +82,6 @@ const Profile = () => {
 
         setProfileData(data);
         
-        // Get the avatar URL if it exists
         if (data.avatar_url) {
           const { data: { publicUrl } } = supabase.storage
             .from('shared-files')
@@ -124,7 +119,6 @@ const Profile = () => {
     }
 
     fetchProfileData();
-    // refresh every 15 seconds to catch deleted/expired files
     const refreshInterval = setInterval(() => fetchUserFiles(profileId), 15000);
     return () => clearInterval(refreshInterval);
   }, [profileId]);
@@ -151,14 +145,12 @@ const Profile = () => {
     const file = e.target.files[0];
     
     try {
-      // Show local preview first
       const reader = new FileReader();
       reader.onload = (event) => {
         setProfileImg(event.target?.result as string);
       };
       reader.readAsDataURL(file);
 
-      // Upload to storage
       const filePath = `avatars/${user.id}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('shared-files')
@@ -169,7 +161,6 @@ const Profile = () => {
 
       if (uploadError) throw uploadError;
 
-      // Update profile with avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: filePath })
@@ -228,7 +219,6 @@ const Profile = () => {
     }
   }
 
-  // Delete file
   async function handleDeleteFile(file: FileData) {
     if (!user || user.id !== profileId) return;
     const confirm = window.confirm("Are you sure you want to delete this file?");
@@ -346,7 +336,6 @@ const Profile = () => {
               <div className="py-8 text-center text-gray-500">No files uploaded yet</div>
             ) : (
               userFiles.map((file) => {
-                // Only show if file not expired
                 const expired = file.expires_at && new Date(file.expires_at).getTime() < now;
                 if (expired) return null;
 

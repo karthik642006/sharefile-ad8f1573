@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   username: string;
   created_at: string;
+  avatar_url?: string | null;  // Added optional avatar_url
 }
 
 export function useUserSearch() {

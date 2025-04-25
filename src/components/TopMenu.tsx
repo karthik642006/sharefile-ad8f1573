@@ -17,11 +17,11 @@ export function TopMenu() {
   const { user } = useAuth();
 
   return (
-    <nav className="flex items-center px-5 bg-white shadow-sm py-3">
-      <div className="flex items-center text-[#9b87f5] font-extrabold text-xl md:text-2xl mr-auto">
+    <nav className="flex flex-col px-5 bg-white shadow-sm py-3">
+      <div className="flex items-center text-[#9b87f5] font-extrabold text-xl md:text-2xl mb-4">
         <Menu className="mr-2" size={24} /> sharefile.lovable.app
       </div>
-      <div className="flex flex-wrap gap-1 md:gap-3 items-center">
+      <div className="flex flex-wrap gap-3 items-center">
         {menuItems.map(item => (
           <Link key={item.title} to={item.url}>
             <Button 
@@ -30,7 +30,7 @@ export function TopMenu() {
               className="flex items-center gap-1"
             >
               <item.icon size={18} />
-              <span className="hidden sm:inline">{item.title}</span>
+              <span>{item.title}</span>
             </Button>
           </Link>
         ))}
@@ -59,3 +59,4 @@ export function TopMenu() {
     </nav>
   );
 }
+

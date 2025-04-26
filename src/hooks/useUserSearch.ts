@@ -30,7 +30,7 @@ export function useUserSearch() {
         .from('profiles')
         .select('*')
         .ilike('username', `%${query}%`)
-        .limit(10) as { data: Profile[] | null, error: Error | null };
+        .limit(10) as { data: Tables<'profiles'>[] | null, error: Error | null };
 
       if (error) throw error;
       

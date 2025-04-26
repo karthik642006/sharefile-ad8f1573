@@ -18,19 +18,19 @@ export function TopMenu() {
 
   return (
     <nav className="flex flex-col px-5 bg-white shadow-sm py-3">
-      <div className="flex items-center text-[#9b87f5] font-extrabold text-xl md:text-2xl mb-4">
+      <div className="flex items-center text-[#9b87f5] font-extrabold text-xl md:text-2xl mb-6">
         <Menu className="mr-2" size={24} /> sharefile.lovable.app
       </div>
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex justify-start items-center space-x-4">
         {menuItems.map(item => (
           <Link key={item.title} to={item.url}>
             <Button 
               variant={location.pathname === item.url ? "secondary" : "ghost"} 
               size="sm" 
-              className="flex items-center gap-1"
+              className="flex flex-col items-center gap-1 h-auto py-2"
             >
-              <item.icon size={18} />
-              <span>{item.title}</span>
+              <item.icon size={24} />
+              <span className="text-sm">{item.title}</span>
             </Button>
           </Link>
         ))}
@@ -40,17 +40,20 @@ export function TopMenu() {
               <Button 
                 variant={location.pathname === "/login" ? "secondary" : "ghost"} 
                 size="sm"
+                className="flex flex-col items-center gap-1 h-auto py-2"
               >
-                Login
+                <User size={24} />
+                <span className="text-sm">Login</span>
               </Button>
             </Link>
             <Link to="/signup">
               <Button 
                 variant={location.pathname === "/signup" ? "secondary" : "default"} 
                 size="sm"
-                className="bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
+                className="flex flex-col items-center gap-1 h-auto py-2 bg-[#9b87f5] hover:bg-[#7E69AB] text-white"
               >
-                Sign Up
+                <User size={24} />
+                <span className="text-sm">Sign Up</span>
               </Button>
             </Link>
           </>
@@ -59,4 +62,3 @@ export function TopMenu() {
     </nav>
   );
 }
-

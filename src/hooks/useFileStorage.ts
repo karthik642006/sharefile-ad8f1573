@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,16 +38,46 @@ export function useFileStorage() {
       const { data: { publicUrl } } = supabase.storage
         .from('shared-files')
         .getPublicUrl(filePath);
+        
+      // Check if user has an active subscription plan
+      const { data: planData, error: planError } = await supabase
+        .rpc('check_active_plan', { user_id: user.id });
+        
+      // Set expiry based on subscription plan
+      let expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000); // Default: 24 hours
+      let plan_expires_at = null;
+        
+      if (planData && planData.length > 0 && planData[0].has_plan) {
+        const plan = planData[0];
+        // If user has an active plan, set the plan_expires_at
+        plan_expires_at = plan.expires_at;
+        
+        // Set file expiry based on plan type
+        switch (plan.plan_type) {
+          case '5day':
+            expires_at = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+            break;
+          case 'monthly':
+            expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            break;
+          case 'yearly':
+            expires_at = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            // Keep default expiry for basic plan
+            break;
+        }
+      }
 
-      // Save file metadata to database (expires_at in 24 hours)
-      const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      // Save file metadata to database
       const { error: dbError, data: fileData } = await supabase
         .from('shared_files')
         .insert({
           user_id: user.id,
           filename: file.name,
           file_path: filePath,
-          expires_at,
+          expires_at: expires_at.toISOString(),
+          plan_expires_at: plan_expires_at,
           downloads: 0 // Initialize download counter
         })
         .select()
@@ -58,10 +87,14 @@ export function useFileStorage() {
         throw dbError;
       }
 
-      // Add notification about auto-deletion after 24 hours
+      // Add notification about file expiration
+      const expiryText = plan_expires_at 
+        ? `Your file will be available until your subscription ends` 
+        : `This file will be auto-deleted after 24 hours`;
+      
       toast({
         title: "File uploaded successfully",
-        description: "Note: Downloaded files will be auto-deleted after 24 hours",
+        description: expiryText,
       });
 
       setIsUploading(false);

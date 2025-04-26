@@ -41,6 +41,7 @@ export type Database = {
           file_path: string
           filename: string
           id: string
+          plan_expires_at: string | null
           user_id: string
         }
         Insert: {
@@ -50,6 +51,7 @@ export type Database = {
           file_path: string
           filename: string
           id?: string
+          plan_expires_at?: string | null
           user_id: string
         }
         Update: {
@@ -59,6 +61,37 @@ export type Database = {
           file_path?: string
           filename?: string
           id?: string
+          plan_expires_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          expires_at: string
+          id: string
+          plan_type: string
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          plan_type: string
+          starts_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          plan_type?: string
+          starts_at?: string
           user_id?: string
         }
         Relationships: []
@@ -68,7 +101,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_active_plan: {
+        Args: { user_id: string }
+        Returns: {
+          has_plan: boolean
+          plan_type: string
+          expires_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

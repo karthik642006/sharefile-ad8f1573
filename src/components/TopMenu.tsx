@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, User, Menu, LayoutDashboard, Tag, Info } from "lucide-react";
+import { Home, User, Menu, LayoutDashboard, Tag, Info, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -10,6 +10,7 @@ const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Pricing", url: "/pricing", icon: Tag },
   { title: "About Us", url: "/about", icon: Info },
+  { title: "Email Setup", url: "/email-setup", icon: Mail },
 ];
 
 export function TopMenu() {

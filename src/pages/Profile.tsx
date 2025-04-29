@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useFileStorage } from "@/hooks/useFileStorage";
-import { Tables } from "@/integrations/supabase/types";
 
 function getTimeLeft(expires_at?: string | null) {
   if (!expires_at) return "Expired";
@@ -37,7 +36,7 @@ interface FileData {
 }
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState<Tables['profiles']>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [userFiles, setUserFiles] = useState<FileData[]>([]);
   const [bio, setBio] = useState("I share photos, docs, and more!");
   const [editingBio, setEditingBio] = useState(false);

@@ -21,42 +21,71 @@ const supabase = createClient(
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  // Find & delete expired files
-  const { data: expiredFiles, error } = await supabase
-    .from("shared_files")
-    .select("id,file_path")
-    .lte("expires_at", new Date().toISOString());
+  try {
+    // Find & delete expired files (where expires_at < now)
+    const { data: expiredFiles, error } = await supabase
+      .from("shared_files")
+      .select("id,file_path")
+      .lte("expires_at", new Date().toISOString());
 
-  if (error) {
-    console.error("DB error:", error);
-    return new Response("Error fetching expired files", { status: 500, headers: corsHeaders });
+    if (error) {
+      console.error("DB error:", error);
+      return new Response("Error fetching expired files", { status: 500, headers: corsHeaders });
+    }
+
+    if (!expiredFiles || expiredFiles.length === 0) {
+      return new Response("No expired files.", { headers: corsHeaders });
+    }
+
+    // Remove all expired files from storage
+    const filePaths = expiredFiles.map(f => f.file_path);
+    const { error: storageError } = await supabase.storage
+      .from("shared-files")
+      .remove(filePaths);
+
+    if (storageError) {
+      console.error("Storage remove error:", storageError);
+      return new Response("Storage remove error", { status: 500, headers: corsHeaders });
+    }
+
+    // Delete all expired file records
+    const { error: dbDelError } = await supabase
+      .from("shared_files")
+      .delete()
+      .in("id", expiredFiles.map(f => f.id));
+
+    if (dbDelError) {
+      console.error("DB delete error:", dbDelError);
+      return new Response("DB delete error", { status: 500, headers: corsHeaders });
+    }
+
+    // Check for and delete expired subscriptions
+    const { data: expiredSubscriptions, error: subError } = await supabase
+      .from("subscriptions")
+      .select("id,user_id")
+      .lte("expires_at", new Date().toISOString());
+
+    if (subError) {
+      console.error("Subscription error:", subError);
+      return new Response(`Deleted ${expiredFiles.length} expired file(s). Error checking subscriptions.`, { headers: corsHeaders });
+    }
+
+    if (expiredSubscriptions && expiredSubscriptions.length > 0) {
+      const { error: subDelError } = await supabase
+        .from("subscriptions")
+        .delete()
+        .in("id", expiredSubscriptions.map(s => s.id));
+      
+      if (subDelError) {
+        console.error("Subscription delete error:", subDelError);
+      }
+      
+      return new Response(`Deleted ${expiredFiles.length} expired file(s) and ${expiredSubscriptions.length} expired subscriptions.`, { headers: corsHeaders });
+    }
+
+    return new Response(`Deleted ${expiredFiles.length} expired file(s).`, { headers: corsHeaders });
+  } catch (error) {
+    console.error("Unhandled error:", error);
+    return new Response(`Unhandled error: ${error.message}`, { status: 500, headers: corsHeaders });
   }
-
-  if (!expiredFiles || expiredFiles.length === 0) {
-    return new Response("No expired files.", { headers: corsHeaders });
-  }
-
-  // Remove all expired files from storage
-  const filePaths = expiredFiles.map(f => f.file_path);
-  const { error: storageError } = await supabase.storage
-    .from("shared-files")
-    .remove(filePaths);
-
-  if (storageError) {
-    console.error("Storage remove error:", storageError);
-    return new Response("Storage remove error", { status: 500, headers: corsHeaders });
-  }
-
-  // Delete all expired file records
-  const { error: dbDelError } = await supabase
-    .from("shared_files")
-    .delete()
-    .in("id", expiredFiles.map(f => f.id));
-
-  if (dbDelError) {
-    console.error("DB delete error:", dbDelError);
-    return new Response("DB delete error", { status: 500, headers: corsHeaders });
-  }
-
-  return new Response(`Deleted ${expiredFiles.length} expired file(s)`, { headers: corsHeaders });
 });

@@ -12,12 +12,13 @@ const plans = [
     name: "Free",
     price: "₹0",
     duration: "Forever",
-    storage: "2GB",
-    fileRetention: "24 hours",
+    storage: "150MB",
+    fileRetention: "30 days",
     features: [
-      "Public File Sharing",
-      "Unlimited Downloads",
-      "Files deleted after 24h"
+      "Up to 3 files per month",
+      "Each file up to 50MB",
+      "Files auto-deleted after 30 days",
+      "Public File Sharing"
     ],
     popular: false
   },
@@ -26,12 +27,12 @@ const plans = [
     name: "5 Day Plan",
     price: "₹10",
     duration: "5 days",
-    storage: "50GB",
+    storage: "100MB",
     fileRetention: "5 days",
     features: [
-      "Premium Support",
-      "Secure Download Links",
-      "Folder Upload Support",
+      "Up to 2 files",
+      "Each file up to 50MB",
+      "Plan expires after 5 days",
       "Files retained for 5 days"
     ],
     popular: true
@@ -41,12 +42,12 @@ const plans = [
     name: "Monthly",
     price: "₹50",
     duration: "1 Month",
-    storage: "100GB",
+    storage: "1GB",
     fileRetention: "30 days",
     features: [
+      "Up to 10 files per month",
+      "Each file up to 100MB",
       "Premium Support",
-      "Priority Downloads",
-      "Folder Upload Support",
       "Files retained for 30 days"
     ],
     popular: false
@@ -56,12 +57,12 @@ const plans = [
     name: "Yearly",
     price: "₹500",
     duration: "1 Year",
-    storage: "200GB",
+    storage: "10GB",
     fileRetention: "365 days",
     features: [
-      "Premium Support",
-      "Priority Downloads",
-      "Analytics Dashboard",
+      "Up to 100 files per year",
+      "Each file up to 100MB",
+      "Priority Support",
       "Files retained for 1 year"
     ],
     popular: false
@@ -81,7 +82,7 @@ const calculateExpiryDate = (plan: string) => {
       now.setFullYear(now.getFullYear() + 1);
       return now;
     default:
-      now.setDate(now.getDate() + 1); // Default to 1 day
+      now.setDate(now.getDate() + 30); // Free plan: 30 days
       return now;
   }
 };
@@ -92,7 +93,7 @@ const Pricing = () => {
   const navigate = useNavigate();
 
   const subscribeToPlan = async (planId: string, amount: number) => {
-    if (!user) {
+    if (!user && planId !== "basic") {
       toast({
         title: "Login Required",
         description: "You need to login to subscribe to a plan",
@@ -108,12 +109,19 @@ const Pricing = () => {
       // Calculate expiration date based on plan
       const expiresAt = calculateExpiryDate(planId);
       
-      // For now, we'll simulate a successful payment
-      // In production, integrate payment gateway here
+      if (planId === "basic") {
+        // For free plan, just show success message (all users have this by default)
+        toast({
+          title: "Basic Plan Active",
+          description: "You can upload up to 3 files (50MB each) per month with the free plan",
+        });
+        setIsProcessing(null);
+        return;
+      }
       
-      // Create subscription record
+      // For paid plans, create subscription record
       const { error } = await supabase.from('subscriptions').insert({
-        user_id: user.id,
+        user_id: user!.id,
         plan_type: planId,
         amount: amount,
         expires_at: expiresAt.toISOString(),
@@ -123,7 +131,7 @@ const Pricing = () => {
       
       toast({
         title: "Plan Activated",
-        description: `Your ${planId} subscription has been activated successfully!`,
+        description: `Your ${getPlanName(planId)} has been activated successfully!`,
       });
       
       // Redirect to dashboard
@@ -139,11 +147,16 @@ const Pricing = () => {
     }
   };
 
+  const getPlanName = (planId: string) => {
+    const plan = plans.find(p => p.id === planId);
+    return plan ? plan.name : "plan";
+  };
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-[#FFDEE2] via-[#e5deff] to-[#d3e4fd] animate-fade-in p-4">
       <div className="w-full max-w-6xl">
         <h2 className="text-3xl font-extrabold text-center text-[#9b87f5] mb-6">Plans &amp; Pricing</h2>
-        <p className="text-center text-gray-600 mb-8 max-w-2xl mx-auto">Choose the plan that suits your needs. Upgrade anytime to get more storage and longer file retention.</p>
+        <p className="text-center text-gray-600 mb-8 max-w-2xl mx-auto">Choose the plan that suits your needs. All plans include our free tier features.</p>
         <div className="flex flex-wrap justify-center gap-4">
           {plans.map((plan) => (
             <div 
@@ -161,7 +174,7 @@ const Pricing = () => {
               <div className="text-2xl font-bold mb-1">{plan.price}</div>
               <div className="text-sm text-gray-500 mb-4">{plan.duration}</div>
               
-              <div className="text-sm font-medium mb-2">{plan.storage} Storage</div>
+              <div className="text-sm font-medium mb-2">{plan.storage} Total Storage</div>
               <ul className="mb-5 text-gray-700 text-sm space-y-2 flex-1">
                 {plan.features.map((feature, idx) => (
                   <li key={idx}>• {feature}</li>
@@ -179,12 +192,16 @@ const Pricing = () => {
                 {isProcessing === plan.id 
                   ? "Processing..." 
                   : plan.id === "basic" 
-                    ? "Get Started" 
+                    ? "Use Free Plan" 
                     : "Subscribe"
                 }
               </Button>
             </div>
           ))}
+        </div>
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <p>All users get access to the Free plan with 3 file uploads per month, even after subscribing to a paid plan.</p>
+          <p className="mt-2">Files are automatically deleted when your plan expires or after the retention period.</p>
         </div>
       </div>
     </section>

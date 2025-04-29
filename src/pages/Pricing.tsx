@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -91,21 +90,11 @@ const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState<{id: string; name: string; price: string} | null>(null);
 
   const subscribeToPlan = async (planId: string, planName: string, planPrice: string) => {
-    if (!user && planId !== "basic") {
-      toast({
-        title: "Login Required",
-        description: "You need to login to subscribe to a plan",
-        variant: "destructive"
-      });
-      navigate("/login");
-      return;
-    }
-    
     if (planId === "basic") {
       // For free plan, just show success message (all users have this by default)
       toast({
         title: "Basic Plan Active",
-        description: "You can upload up to 3 files (50MB each) per month with the free plan",
+        description: "You can upload up to 3 files per month with the free plan",
       });
       return;
     } else {
@@ -117,11 +106,6 @@ const Pricing = () => {
       });
       setQrModalOpen(true);
     }
-  };
-
-  const getPlanName = (planId: string) => {
-    const plan = plans.find(p => p.id === planId);
-    return plan ? plan.name : "plan";
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,12 +13,10 @@ const plans = [
     name: "Free",
     price: "₹0",
     duration: "Forever",
-    storage: "150MB",
-    fileRetention: "30 days",
     features: [
       "Up to 3 files per month",
       "Each file up to 50MB",
-      "Files auto-deleted after 30 days",
+      "Files auto-deleted after 24 hours",
       "Public File Sharing"
     ],
     popular: false
@@ -27,13 +26,12 @@ const plans = [
     name: "5 Day Plan",
     price: "₹10",
     duration: "5 days",
-    storage: "100MB",
-    fileRetention: "5 days",
     features: [
       "Up to 2 files",
       "Each file up to 50MB",
       "Plan expires after 5 days",
-      "Files retained for 5 days"
+      "Files auto-deleted after 24 hours",
+      "Includes Free Plan"
     ],
     popular: true
   },
@@ -42,13 +40,12 @@ const plans = [
     name: "Monthly",
     price: "₹50",
     duration: "1 Month",
-    storage: "1GB",
-    fileRetention: "30 days",
     features: [
       "Up to 10 files per month",
       "Each file up to 100MB",
       "Premium Support",
-      "Files retained for 30 days"
+      "Files auto-deleted after 24 hours",
+      "Includes Free Plan"
     ],
     popular: false
   },
@@ -57,13 +54,12 @@ const plans = [
     name: "Yearly",
     price: "₹500",
     duration: "1 Year",
-    storage: "10GB",
-    fileRetention: "365 days",
     features: [
       "Up to 100 files per year",
       "Each file up to 100MB",
       "Priority Support",
-      "Files retained for 1 year"
+      "Files auto-deleted after 24 hours",
+      "Includes Free Plan"
     ],
     popular: false
   }
@@ -150,7 +146,6 @@ const Pricing = () => {
               <div className="text-2xl font-bold mb-1">{plan.price}</div>
               <div className="text-sm text-gray-500 mb-4">{plan.duration}</div>
               
-              <div className="text-sm font-medium mb-2">{plan.storage} Total Storage</div>
               <ul className="mb-5 text-gray-700 text-sm space-y-2 flex-1">
                 {plan.features.map((feature, idx) => (
                   <li key={idx}>• {feature}</li>
@@ -177,7 +172,7 @@ const Pricing = () => {
         </div>
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>All users get access to the Free plan with 3 file uploads per month, even after subscribing to a paid plan.</p>
-          <p className="mt-2">Files are automatically deleted when your plan expires or after the retention period.</p>
+          <p className="mt-2">All uploaded files are automatically deleted after 24 hours.</p>
         </div>
       </div>
 

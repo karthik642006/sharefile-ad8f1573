@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +41,7 @@ export function useFileStorage() {
       // Set plan limits based on subscription
       let maxFileSize = 50; // Default: 50MB for free plan
       let maxFilesPerPeriod = 3; // Default: 3 files per month for free plan
-      let expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default: 30 days
+      let expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours expiry for all files
       let plan_expires_at = null;
         
       if (planData && planData.length > 0 && planData[0].has_plan) {
@@ -50,20 +49,17 @@ export function useFileStorage() {
         // If user has an active plan, set the plan_expires_at
         plan_expires_at = plan.expires_at;
         
-        // Set file expiry and limits based on plan type
+        // Set file limits based on plan type
         switch (plan.plan_type) {
           case '5day':
-            expires_at = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
             maxFileSize = 50; // 50MB per file
             maxFilesPerPeriod = 2; // 2 files per 5-day plan
             break;
           case 'monthly':
-            expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
             maxFileSize = 100; // 100MB per file
             maxFilesPerPeriod = 10; // 10 files per month
             break;
           case 'yearly':
-            expires_at = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
             maxFileSize = 100; // 100MB per file
             maxFilesPerPeriod = 100; // 100 files per year
             break;
@@ -149,13 +145,9 @@ export function useFileStorage() {
       }
 
       // Add notification about file expiration
-      const expiryText = plan_expires_at 
-        ? `Your file will be available until ${new Date(expires_at).toLocaleDateString()}` 
-        : `This file will be auto-deleted after 30 days`;
-      
       toast({
         title: "File uploaded successfully",
-        description: expiryText,
+        description: "Your file will be auto-deleted after 24 hours",
       });
 
       setIsUploading(false);

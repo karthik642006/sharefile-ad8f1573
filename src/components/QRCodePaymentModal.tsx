@@ -44,7 +44,7 @@ export const QRCodePaymentModal = ({ isOpen, onClose, planId, planName, planPric
   
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/952a2697-8123-4eff-a89e-0ef03d173528.png";
+    link.href = "/lovable-uploads/ef215312-3e12-4d54-acd0-82e31bda3fd7.png";
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();
@@ -81,7 +81,7 @@ export const QRCodePaymentModal = ({ isOpen, onClose, planId, planName, planPric
       
       // Calculate expiration date based on plan
       const now = new Date();
-      let expiresAt = now;
+      let expiresAt = new Date();
       
       switch (planId) {
         case "5day":
@@ -136,11 +136,11 @@ export const QRCodePaymentModal = ({ isOpen, onClose, planId, planName, planPric
           <DialogTitle className="text-center mb-2">Pay with UPI for {planName} (₹{planPrice.replace('₹', '')})</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center space-y-4">
-          <div className="border p-2 bg-white rounded-md">
+          <div className="border p-2 bg-white rounded-md w-full">
             <img 
-              src="/lovable-uploads/952a2697-8123-4eff-a89e-0ef03d173528.png" 
+              src="/lovable-uploads/ef215312-3e12-4d54-acd0-82e31bda3fd7.png" 
               alt="Payment QR Code" 
-              className="w-64 h-64 object-contain"
+              className="w-full object-contain"
             />
           </div>
           <div className="text-center text-sm text-gray-500">

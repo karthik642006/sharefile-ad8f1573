@@ -87,7 +87,7 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
       // Inform user about auto-deletion
       toast({
         title: "File will auto-delete",
-        description: "This downloaded file will be automatically deleted after 24 hours.",
+        description: "This file will be automatically deleted after 24 hours.",
       });
       
       // Track download action in localStorage with expiration time
@@ -156,13 +156,10 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
         </Button>
       </div>
       
-      {fileData.expires_at && (
-        <div className="mt-6 pt-4 border-t text-sm text-gray-500">
-          <p>File shared on {new Date(fileData.created_at).toLocaleDateString()}</p>
-          <p>Available until {new Date(fileData.expires_at).toLocaleString()}</p>
-          <p className="text-yellow-600 mt-1">Downloaded files will auto-delete after 24 hours</p>
-        </div>
-      )}
+      <div className="mt-6 pt-4 border-t text-sm text-gray-500">
+        <p>File shared on {new Date(fileData.created_at).toLocaleDateString()}</p>
+        <p className="text-yellow-600 mt-1">All files will auto-delete after 24 hours</p>
+      </div>
     </div>
   );
 };

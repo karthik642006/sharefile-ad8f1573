@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     // Check for and delete expired subscriptions
     const { data: expiredSubscriptions, error: subError } = await supabase
       .from("subscriptions")
-      .select("id,user_id")
+      .select("id,user_id,transaction_id")
       .lte("expires_at", new Date().toISOString());
 
     if (subError) {

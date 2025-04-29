@@ -1,10 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { QRCodePaymentModal } from "@/components/QRCodePaymentModal";
 
 const plans = [
   {
@@ -91,8 +91,10 @@ const Pricing = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{id: string; name: string; price: string} | null>(null);
 
-  const subscribeToPlan = async (planId: string, amount: number) => {
+  const subscribeToPlan = async (planId: string, planName: string, planPrice: string) => {
     if (!user && planId !== "basic") {
       toast({
         title: "Login Required",
@@ -102,48 +104,22 @@ const Pricing = () => {
       navigate("/login");
       return;
     }
-
-    try {
-      setIsProcessing(planId);
-      
-      // Calculate expiration date based on plan
-      const expiresAt = calculateExpiryDate(planId);
-      
-      if (planId === "basic") {
-        // For free plan, just show success message (all users have this by default)
-        toast({
-          title: "Basic Plan Active",
-          description: "You can upload up to 3 files (50MB each) per month with the free plan",
-        });
-        setIsProcessing(null);
-        return;
-      }
-      
-      // For paid plans, create subscription record
-      const { error } = await supabase.from('subscriptions').insert({
-        user_id: user!.id,
-        plan_type: planId,
-        amount: amount,
-        expires_at: expiresAt.toISOString(),
-      });
-      
-      if (error) throw error;
-      
+    
+    if (planId === "basic") {
+      // For free plan, just show success message (all users have this by default)
       toast({
-        title: "Plan Activated",
-        description: `Your ${getPlanName(planId)} has been activated successfully!`,
+        title: "Basic Plan Active",
+        description: "You can upload up to 3 files (50MB each) per month with the free plan",
       });
-      
-      // Redirect to dashboard
-      navigate("/dashboard");
-    } catch (error: any) {
-      toast({
-        title: "Subscription Failed",
-        description: error.message,
-        variant: "destructive"
+      return;
+    } else {
+      // For paid plans, show QR code payment modal
+      setSelectedPlan({
+        id: planId,
+        name: planName,
+        price: planPrice
       });
-    } finally {
-      setIsProcessing(null);
+      setQrModalOpen(true);
     }
   };
 
@@ -187,7 +163,7 @@ const Pricing = () => {
                   : "bg-[#33C3F0] hover:bg-[#1493c7]"
                 }
                 disabled={isProcessing === plan.id}
-                onClick={() => subscribeToPlan(plan.id, parseInt(plan.price.replace('₹', '')))}
+                onClick={() => subscribeToPlan(plan.id, plan.name, plan.price)}
               >
                 {isProcessing === plan.id 
                   ? "Processing..." 
@@ -204,6 +180,17 @@ const Pricing = () => {
           <p className="mt-2">Files are automatically deleted when your plan expires or after the retention period.</p>
         </div>
       </div>
+
+      {/* QR Code Payment Modal */}
+      {selectedPlan && (
+        <QRCodePaymentModal
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+          planId={selectedPlan.id}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+        />
+      )}
     </section>
   );
 };

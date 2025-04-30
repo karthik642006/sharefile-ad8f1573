@@ -57,7 +57,7 @@ export const QRCodePaymentModal = ({ isOpen, onClose, planId, planName, planPric
   
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/5ff00fa8-2352-4ed4-a053-759205327dd0.png";
+    link.href = "/lovable-uploads/4654188f-3d6c-4085-8006-f7fb2dba7c6c.png";
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();
@@ -177,7 +177,7 @@ export const QRCodePaymentModal = ({ isOpen, onClose, planId, planName, planPric
             <div className="flex flex-col items-center space-y-4">
               <div className="border p-2 bg-white rounded-md w-full flex justify-center">
                 <img 
-                  src="/lovable-uploads/5ff00fa8-2352-4ed4-a053-759205327dd0.png" 
+                  src="/lovable-uploads/4654188f-3d6c-4085-8006-f7fb2dba7c6c.png" 
                   alt="Payment QR Code" 
                   className="w-64 h-64 object-contain"
                 />

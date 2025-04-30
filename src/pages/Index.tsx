@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Search, File, Folder, User as UserIcon, Lock, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ const Index = () => {
     await navigator.clipboard.writeText(appUrl);
     toast({
       title: "App Link Copied!",
-      description: "The link to FileLinker app has been copied to your clipboard",
+      description: "The link to sharefile.lovable.app has been copied to your clipboard",
     });
   };
 
@@ -153,11 +154,11 @@ const Index = () => {
               Share Files Securely & Instantly
             </h1>
             <p className="text-lg text-gray-700 mb-2">
-              <span className="font-semibold">FileLinker</span> enables anyone to download files instantly — sign up to upload and share yours with unique links!
+              <span className="font-semibold">sharefile.lovable.app</span> enables anyone to download files instantly — sign up to upload and share yours with unique links!
             </p>
             <ul className="flex flex-wrap gap-x-7 gap-y-2 items-center justify-center mt-3 text-base text-gray-600">
-              <li className="flex items-center gap-2"><File size={18} className="text-[#9b87f5]" /> Single or multiple file sharing</li>
-              <li className="flex items-center gap-2"><Folder size={18} className="text-[#33C3F0]" /> Folder support</li>
+              <li className="flex items-center gap-2"><File size={18} className="text-[#9b87f5]" /> Single file sharing</li>
+              <li className="flex items-center gap-2"><Folder size={18} className="text-[#33C3F0]" /> Secure file transfer</li>
               <li className="flex items-center gap-2"><Search size={18} className="text-[#7E69AB]" /> Public search & download</li>
             </ul>
             <div className="w-full flex flex-col md:flex-row justify-center items-center gap-4 mt-4">

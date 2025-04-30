@@ -12,6 +12,11 @@ interface PaymentSubmissionOptions {
   user: User | null;
 }
 
+interface PaymentFormValues {
+  transactionId: string;
+  email: string;
+}
+
 export const usePaymentSubmission = ({ planId, planName, onClose, user }: PaymentSubmissionOptions) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
@@ -20,7 +25,7 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
     return /^\d{12}$/.test(id); // Check if it's exactly 12 digits
   };
 
-  const handleSubmit = async (values: { transactionId: string; email: string }) => {
+  const handleSubmit = async (values: PaymentFormValues) => {
     if (!validateTransactionId(values.transactionId)) {
       toast({
         title: "Invalid Transaction ID",

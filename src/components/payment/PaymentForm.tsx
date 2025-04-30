@@ -60,7 +60,7 @@ export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) 
             className="w-full bg-[#33C3F0] hover:bg-[#1493c7]"
             disabled={isProcessing || !form.getValues("transactionId") || form.getValues("transactionId").length !== 12}
           >
-            {isProcessing ? "Processing..." : "Verify & Activate Plan"}
+            {isProcessing ? "Processing..." : "Deposit & Activate Plan"}
           </Button>
         </div>
       </form>

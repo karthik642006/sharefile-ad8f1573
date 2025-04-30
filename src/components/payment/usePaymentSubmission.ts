@@ -122,7 +122,7 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/d598ee44-4fce-4163-9046-3541296b752c.png";
+    link.href = "/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png";
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();

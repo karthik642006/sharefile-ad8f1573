@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Download, File, Share } from 'lucide-react';
+import { Download, File, Share, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -27,6 +27,7 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
   useEffect(() => {
     async function fetchFileData() {
@@ -61,6 +62,11 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
           username: profileData?.username,
           publicUrl
         });
+
+        // Calculate time left for auto-deletion
+        if (fileData.expires_at) {
+          updateTimeLeft(new Date(fileData.expires_at));
+        }
       } catch (err: any) {
         console.error('Error fetching file:', err);
         setError(err.message || 'Failed to load file');
@@ -70,7 +76,33 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
     }
     
     fetchFileData();
+
+    // Set up interval to update the time left
+    const timer = setInterval(() => {
+      if (fileData?.expires_at) {
+        updateTimeLeft(new Date(fileData.expires_at));
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, [fileId]);
+
+  // Function to update time left display
+  const updateTimeLeft = (expiryDate: Date) => {
+    const now = new Date();
+    const diff = expiryDate.getTime() - now.getTime();
+    
+    if (diff <= 0) {
+      setTimeLeft("Expired");
+      return;
+    }
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+  };
 
   const handleShare = async () => {
     const shareableLink = getShareableLink(fileId);
@@ -135,6 +167,11 @@ const FileDownload: React.FC<FileDownloadProps> = ({ fileId }) => {
             Shared by {fileData.username || 'Unknown user'} · {fileData.downloads} downloads
           </p>
         </div>
+      </div>
+      
+      <div className="flex items-center justify-center my-3 text-orange-500">
+        <Clock className="mr-2" size={16} />
+        <span className="text-sm font-medium">Auto-deletes in: {timeLeft}</span>
       </div>
       
       <div className="flex flex-col gap-4 mt-6">

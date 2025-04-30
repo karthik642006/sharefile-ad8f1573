@@ -1,13 +1,8 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { File, FileDown, Trash, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-
-function getTimeLeft() {
-  const hours = 24;
-  return `${hours}h`;
-}
 
 interface FileData {
   id: string;
@@ -25,6 +20,34 @@ interface FileItemProps {
 }
 
 export const FileItem = ({ file, isCurrentUser, onDeleteFile }: FileItemProps) => {
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    // Calculate and update time left for auto-deletion
+    const updateTimeLeft = () => {
+      if (!file.expires_at) return;
+      
+      const expiryDate = new Date(file.expires_at);
+      const now = new Date();
+      const diff = expiryDate.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setTimeLeft("Expired");
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      setTimeLeft(`${hours}h ${minutes}m`);
+    };
+    
+    updateTimeLeft();
+    const timer = setInterval(updateTimeLeft, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, [file.expires_at]);
+
   function getFileIcon(filename: string) {
     const extension = filename.split('.').pop()?.toLowerCase();
 
@@ -56,7 +79,7 @@ export const FileItem = ({ file, isCurrentUser, onDeleteFile }: FileItemProps) =
         <div className="flex items-center gap-1 mt-1 text-sm text-orange-500">
           <Clock size={14} />
           <span>
-            Auto-deletes in {getTimeLeft()}
+            Auto-deletes in {timeLeft}
           </span>
         </div>
       </div>

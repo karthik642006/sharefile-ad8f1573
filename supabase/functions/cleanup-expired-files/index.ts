@@ -22,11 +22,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    console.log("Running expired files cleanup job");
+    
     // Find & delete expired files (where expires_at < now)
     const { data: expiredFiles, error } = await supabase
       .from("shared_files")
       .select("id,file_path")
-      .lte("expires_at", new Date().toISOString());
+      .lt("expires_at", new Date().toISOString());
 
     if (error) {
       console.error("DB error:", error);
@@ -34,8 +36,11 @@ Deno.serve(async (req) => {
     }
 
     if (!expiredFiles || expiredFiles.length === 0) {
+      console.log("No expired files found");
       return new Response("No expired files.", { headers: corsHeaders });
     }
+
+    console.log(`Found ${expiredFiles.length} expired files to delete`);
 
     // Remove all expired files from storage
     const filePaths = expiredFiles.map(f => f.file_path);
@@ -59,11 +64,13 @@ Deno.serve(async (req) => {
       return new Response("DB delete error", { status: 500, headers: corsHeaders });
     }
 
+    console.log(`Successfully deleted ${expiredFiles.length} expired files`);
+
     // Check for and delete expired subscriptions
     const { data: expiredSubscriptions, error: subError } = await supabase
       .from("subscriptions")
       .select("id,user_id,transaction_id")
-      .lte("expires_at", new Date().toISOString());
+      .lt("expires_at", new Date().toISOString());
 
     if (subError) {
       console.error("Subscription error:", subError);
@@ -71,6 +78,8 @@ Deno.serve(async (req) => {
     }
 
     if (expiredSubscriptions && expiredSubscriptions.length > 0) {
+      console.log(`Found ${expiredSubscriptions.length} expired subscriptions to delete`);
+      
       const { error: subDelError } = await supabase
         .from("subscriptions")
         .delete()
@@ -78,6 +87,8 @@ Deno.serve(async (req) => {
       
       if (subDelError) {
         console.error("Subscription delete error:", subDelError);
+      } else {
+        console.log(`Successfully deleted ${expiredSubscriptions.length} expired subscriptions`);
       }
       
       return new Response(`Deleted ${expiredFiles.length} expired file(s) and ${expiredSubscriptions.length} expired subscriptions.`, { headers: corsHeaders });

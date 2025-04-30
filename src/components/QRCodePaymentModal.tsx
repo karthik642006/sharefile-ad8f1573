@@ -64,7 +64,7 @@ export const QRCodePaymentModal = ({
           <PaymentForm 
             form={form} 
             isProcessing={isProcessing} 
-            onSubmit={(values) => handleSubmit(values)} 
+            onSubmit={handleSubmit} 
           />
         </div>
       </DialogContent>

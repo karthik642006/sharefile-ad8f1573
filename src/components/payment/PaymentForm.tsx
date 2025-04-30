@@ -4,22 +4,18 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
-
-interface FormValues {
-  transactionId: string;
-  email: string;
-}
+import { PaymentFormValues } from "./usePaymentSubmission";
 
 interface PaymentFormProps {
-  form: UseFormReturn<FormValues>;
+  form: UseFormReturn<PaymentFormValues>;
   isProcessing: boolean;
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: PaymentFormValues) => Promise<void>;
 }
 
 export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) => {
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
         <div className="flex flex-col items-center space-y-4">
           <FormField
             control={form.control}

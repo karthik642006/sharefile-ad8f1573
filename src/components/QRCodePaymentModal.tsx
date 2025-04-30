@@ -1,10 +1,10 @@
 
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { QrCodeDisplay } from "@/components/payment/QrCodeDisplay";
 import { PaymentForm } from "@/components/payment/PaymentForm";
-import { usePaymentSubmission } from "@/components/payment/usePaymentSubmission";
+import { usePaymentSubmission, PaymentFormValues } from "@/components/payment/usePaymentSubmission";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface QRCodePaymentModalProps {
@@ -13,11 +13,6 @@ interface QRCodePaymentModalProps {
   planId: string;
   planName: string;
   planPrice: string;
-}
-
-interface FormValues {
-  transactionId: string;
-  email: string;
 }
 
 export const QRCodePaymentModal = ({ 
@@ -29,7 +24,7 @@ export const QRCodePaymentModal = ({
 }: QRCodePaymentModalProps) => {
   const { user } = useAuth();
   
-  const form = useForm<FormValues>({
+  const form = useForm<PaymentFormValues>({
     defaultValues: {
       transactionId: "",
       email: user?.email || "",
@@ -53,6 +48,7 @@ export const QRCodePaymentModal = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center mb-2">Pay with UPI for {planName} (₹{planPrice.replace('₹', '')})</DialogTitle>
+          <DialogDescription className="sr-only">Scan QR code to pay with UPI</DialogDescription>
         </DialogHeader>
         
         <div className="flex flex-col items-center space-y-4">

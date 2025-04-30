@@ -12,7 +12,7 @@ interface PaymentSubmissionOptions {
   user: User | null;
 }
 
-interface PaymentFormValues {
+export interface PaymentFormValues {
   transactionId: string;
   email: string;
 }

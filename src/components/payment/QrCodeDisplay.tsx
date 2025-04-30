@@ -12,7 +12,7 @@ export const QrCodeDisplay = ({ handleDownload, handleShare }: QrCodeDisplayProp
     <>
       <div className="border p-2 bg-white rounded-md w-full flex justify-center">
         <img 
-          src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" 
+          src="/lovable-uploads/de13f4b5-863e-48fc-b865-8e545015db9e.png" 
           alt="Payment QR Code" 
           className="w-64 h-64 object-contain"
         />

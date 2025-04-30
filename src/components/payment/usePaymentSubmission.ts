@@ -14,7 +14,6 @@ interface PaymentSubmissionOptions {
 
 export interface PaymentFormValues {
   transactionId: string;
-  email: string;
 }
 
 export const usePaymentSubmission = ({ planId, planName, onClose, user }: PaymentSubmissionOptions) => {
@@ -58,30 +57,16 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
       
       let userId = user?.id;
       
-      // If user is not logged in but provided an email, create an account or get existing
-      if (!userId && values.email) {
-        const { data: existingUser, error: lookupError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', values.email)
-          .single();
-        
-        if (lookupError && !existingUser) {
-          // Create a new user record
-          const { data: newUserData, error: createError } = await supabase.auth.signUp({
-            email: values.email,
-            password: Math.random().toString(36).slice(-8), // Generate a random password
-          });
-          
-          if (createError) throw createError;
-          userId = newUserData.user?.id;
-        } else if (existingUser) {
-          userId = existingUser.id;
-        }
-      }
-      
+      // If user is not logged in, show login prompt
       if (!userId) {
-        throw new Error("Unable to identify user. Please login or provide a valid email.");
+        toast({
+          title: "Login Required",
+          description: "Please login or sign up to activate your plan",
+        });
+        
+        onClose();
+        navigate("/login");
+        return;
       }
       
       // Store subscription record with transaction ID
@@ -91,7 +76,6 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
         amount: parseInt(planName.match(/\d+/)?.[0] || "0"),
         expires_at: expiresAt.toISOString(),
         transaction_id: values.transactionId,
-        email: values.email
       });
       
       if (error) throw error;
@@ -102,13 +86,8 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
       });
       
       onClose();
+      navigate("/dashboard");
       
-      // If user is not logged in, redirect to login page
-      if (!user) {
-        navigate("/login");
-      } else {
-        navigate("/dashboard");
-      }
     } catch (error: any) {
       toast({
         title: "Subscription Failed",
@@ -122,7 +101,7 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png";
+    link.href = "/lovable-uploads/de13f4b5-863e-48fc-b865-8e545015db9e.png";
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();

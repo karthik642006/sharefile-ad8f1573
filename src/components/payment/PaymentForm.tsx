@@ -34,24 +34,6 @@ export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) 
               </FormItem>
             )}
           />
-          
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Your Email:</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="your@email.com"
-                    {...field}
-                  />
-                </FormControl>
-                <p className="text-xs text-gray-500">Provide your email to activate your plan</p>
-              </FormItem>
-            )}
-          />
         </div>
         
         <div className="flex justify-end">

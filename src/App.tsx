@@ -11,7 +11,6 @@ import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import Download from "./pages/Download";
-import EmailSetup from "./pages/EmailSetup";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopMenu } from "@/components/TopMenu";
@@ -20,7 +19,14 @@ import Login from "./pages/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AppProvider } from "./contexts/AppContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 60000,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,7 +51,6 @@ const App = () => (
                     <Route path="/signup" element={<SignUp />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/download/:fileId" element={<Download />} />
-                    <Route path="/email-setup" element={<EmailSetup />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

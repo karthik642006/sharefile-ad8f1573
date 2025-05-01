@@ -8,6 +8,7 @@ import { User } from "@supabase/supabase-js";
 interface PaymentSubmissionOptions {
   planId: string;
   planName: string;
+  planPrice: string;
   onClose: () => void;
   user: User | null;
 }
@@ -16,7 +17,7 @@ export interface PaymentFormValues {
   transactionId: string;
 }
 
-export const usePaymentSubmission = ({ planId, planName, onClose, user }: PaymentSubmissionOptions) => {
+export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, user }: PaymentSubmissionOptions) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
@@ -69,11 +70,14 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
         return;
       }
       
+      // Extract amount from planPrice (remove ₹ symbol)
+      const amount = parseInt(planPrice.replace(/[^\d]/g, ''));
+      
       // Store subscription record with transaction ID
       const { error } = await supabase.from('subscriptions').insert({
         user_id: userId,
         plan_type: planId,
-        amount: parseInt(planName.match(/\d+/)?.[0] || "0"),
+        amount: amount,
         expires_at: expiresAt.toISOString(),
         transaction_id: values.transactionId,
       });
@@ -101,7 +105,7 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/de13f4b5-863e-48fc-b865-8e545015db9e.png";
+    link.href = "/lovable-uploads/0913dd91-8a8d-4f7d-9463-ac62c39141f5.png";
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();
@@ -110,21 +114,40 @@ export const usePaymentSubmission = ({ planId, planName, onClose, user }: Paymen
   
   const handleShare = async () => {
     try {
-      if (navigator.share) {
+      // Create a blob from the QR code image
+      const response = await fetch("/lovable-uploads/0913dd91-8a8d-4f7d-9463-ac62c39141f5.png");
+      const blob = await response.blob();
+      
+      // Create a file from the blob
+      const file = new File([blob], `payment-qr-code-${planId}.png`, { type: blob.type });
+      
+      if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `Payment QR Code for ${planName}`,
-          text: `Scan this QR code to pay for ${planName} plan`,
+          text: `Scan this QR code to pay ₹${planPrice.replace('₹', '')} for ${planName} plan`,
+          files: [file],
+        });
+      } else if (navigator.share) {
+        // Fallback to regular share if file sharing not supported
+        await navigator.share({
+          title: `Payment QR Code for ${planName}`,
+          text: `Scan this QR code to pay ₹${planPrice.replace('₹', '')} for ${planName} plan on sharefile.lovable.app`,
           url: window.location.href,
         });
       } else {
         toast({
           title: "Share not supported",
-          description: "Your browser doesn't support the Share API",
+          description: "Your browser doesn't support the Web Share API",
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error("Error sharing:", error);
+      toast({
+        title: "Error sharing QR code",
+        description: "An error occurred while trying to share the QR code",
+        variant: "destructive"
+      });
     }
   };
 

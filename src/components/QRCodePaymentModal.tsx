@@ -27,7 +27,6 @@ export const QRCodePaymentModal = ({
   const form = useForm<PaymentFormValues>({
     defaultValues: {
       transactionId: "",
-      email: user?.email || "",
     }
   });
   
@@ -39,6 +38,7 @@ export const QRCodePaymentModal = ({
   } = usePaymentSubmission({ 
     planId, 
     planName, 
+    planPrice,
     onClose, 
     user 
   });

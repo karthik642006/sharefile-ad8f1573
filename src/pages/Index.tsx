@@ -9,6 +9,7 @@ import { useUserSearch } from "@/hooks/useUserSearch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { shareApp } from "@/utils/shareUtils";
 
 const Index = () => {
   const [userSearch, setUserSearch] = useState("");
@@ -19,6 +20,36 @@ const Index = () => {
   const { searchUsers, results, isSearching, error } = useUserSearch();
   const navigate = useNavigate();
 
+  // Force refresh app version on first load
+  useEffect(() => {
+    // Add timestamp parameter to force reload assets
+    if (window.performance && window.performance.navigation.type === 0) {
+      // This is a fresh page load, not a refresh
+      const cacheBuster = `?v=${new Date().getTime()}`;
+      const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
+      const scriptElements = document.querySelectorAll('script[src]');
+      
+      // Update CSS links
+      linkElements.forEach(link => {
+        const elem = link as HTMLLinkElement;
+        if (elem.href && !elem.href.includes('?v=')) {
+          elem.href = `${elem.href}${cacheBuster}`;
+        }
+      });
+      
+      // Update JS scripts
+      scriptElements.forEach(script => {
+        const elem = script as HTMLScriptElement;
+        if (elem.src && !elem.src.includes('?v=')) {
+          // Create a new script element
+          const newScript = document.createElement('script');
+          newScript.src = `${elem.src}${cacheBuster}`;
+          elem.parentNode?.replaceChild(newScript, elem);
+        }
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (userSearch) {
@@ -27,7 +58,7 @@ const Index = () => {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [userSearch]);
+  }, [userSearch, searchUsers]);
 
   const handleViewProfile = async (profile: {id: string, username: string}) => {
     setSelectedProfile(profile);
@@ -65,13 +96,16 @@ const Index = () => {
     }
   };
 
-  const appUrl = window.location.origin;
-  const shareAppLink = async () => {
-    await navigator.clipboard.writeText(appUrl);
-    toast({
-      title: "App Link Copied!",
-      description: "The link to sharefile.lovable.app has been copied to your clipboard",
-    });
+  const handleShareAppLink = async () => {
+    const shared = await shareApp();
+    if (!shared) {
+      // Fallback to clipboard if Web Share API is not available
+      await navigator.clipboard.writeText(window.location.origin);
+      toast({
+        title: "App Link Copied!",
+        description: "The link to sharefile.lovable.app has been copied to your clipboard",
+      });
+    }
   };
 
   return (
@@ -171,7 +205,7 @@ const Index = () => {
                 variant="outline" 
                 size="lg"
                 className="w-full md:w-auto flex items-center gap-2"
-                onClick={shareAppLink}
+                onClick={handleShareAppLink}
               >
                 <Link size={18} />
                 Share App Link

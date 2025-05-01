@@ -1,9 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { QRCodePaymentModal } from "@/components/payment/QRCodePaymentModal";
 
 const plans = [
   {
@@ -84,6 +85,9 @@ const calculateExpiryDate = (plan: string) => {
 const Pricing = () => {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{id: string; name: string; price: string} | null>(null);
 
   const subscribeToPlan = async (planId: string, planName: string, planPrice: string) => {
     if (!user) {
@@ -104,50 +108,13 @@ const Pricing = () => {
       return;
     }
     
-    setIsProcessing(planId);
-
-    try {
-      // Calculate expiry date based on the plan
-      const expiryDate = calculateExpiryDate(planId);
-      
-      // Create a payment record in Supabase
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_type: planId,
-          amount: parseFloat(planPrice.replace('₹', '')),
-          expires_at: expiryDate.toISOString(),
-          transaction_id: `tr_${Math.random().toString(36).substring(2, 15)}`,
-        })
-        .select();
-
-      if (error) throw error;
-
-      // Update user metadata with the new subscription
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: {
-          subscription_plan: planId,
-          subscription_expiry: expiryDate.toISOString(),
-        },
-      });
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Payment Successful",
-        description: `You've successfully subscribed to the ${planName} plan!`,
-      });
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Payment Failed",
-        description: "There was an issue processing your payment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(null);
-    }
+    // For paid plans, show QR code payment modal
+    setSelectedPlan({
+      id: planId,
+      name: planName,
+      price: planPrice
+    });
+    setQrModalOpen(true);
   };
 
   return (
@@ -201,6 +168,17 @@ const Pricing = () => {
           <p className="mt-2">All uploaded files are automatically deleted after 24 hours.</p>
         </div>
       </div>
+
+      {/* QR Code Payment Modal */}
+      {selectedPlan && (
+        <QRCodePaymentModal
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+          planId={selectedPlan.id}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+        />
+      )}
     </section>
   );
 };

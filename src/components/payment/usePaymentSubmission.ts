@@ -105,7 +105,7 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/0913dd91-8a8d-4f7d-9463-ac62c39141f5.png";
+    link.href = "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();
@@ -115,7 +115,7 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
   const handleShare = async () => {
     try {
       // Create a blob from the QR code image
-      const response = await fetch("/lovable-uploads/0913dd91-8a8d-4f7d-9463-ac62c39141f5.png");
+      const response = await fetch("/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png");
       const blob = await response.blob();
       
       // Create a file from the blob

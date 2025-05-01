@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
@@ -33,14 +33,17 @@ export function QRCodePaymentModal({ isOpen, onClose, planId, planName, planPric
     setIsProcessing(true);
 
     try {
-      // Create a payment record in Supabase
+      // Calculate expiry date based on the plan
+      const expiryDate = calculateExpiryDate(planId);
+      
+      // Create a payment record in Supabase with the correct column names
       const { data, error } = await supabase
         .from('subscriptions')
         .insert({
           user_id: user.id,
-          plan_id: planId,
+          plan_type: planId, // Changed from plan_id to plan_type according to schema
           amount: parseFloat(planPrice.replace('₹', '')),
-          status: 'completed',
+          expires_at: expiryDate.toISOString(), // Added expires_at field
           transaction_id: `tr_${Math.random().toString(36).substring(2, 15)}`,
         })
         .select();
@@ -48,8 +51,6 @@ export function QRCodePaymentModal({ isOpen, onClose, planId, planName, planPric
       if (error) throw error;
 
       // Update user metadata with the new subscription
-      const expiryDate = calculateExpiryDate(planId);
-      
       const { error: updateError } = await supabase.auth.updateUser({
         data: {
           subscription_plan: planId,
@@ -104,7 +105,7 @@ export function QRCodePaymentModal({ isOpen, onClose, planId, planName, planPric
         </DialogHeader>
         <div className="flex flex-col items-center justify-center gap-4 p-4">
           <div className="bg-white p-4 rounded-lg">
-            <QRCode value={paymentLink} size={200} />
+            <QRCodeSVG value={paymentLink} size={200} />
           </div>
           <div className="text-center">
             <p className="mb-2"><span className="font-semibold">{planName}</span> - {planPrice}</p>

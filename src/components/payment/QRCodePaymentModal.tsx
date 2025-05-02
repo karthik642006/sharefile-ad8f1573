@@ -38,6 +38,13 @@ export const QRCodePaymentModal = ({
   });
 
   const amount = planPrice.replace('₹', '');
+  
+  // Use the new QR code image for ₹500 plan only
+  const qrCodeImage = amount === "500" 
+    ? "/lovable-uploads/23740b0c-7e08-42c9-b81d-976489b948a0.png"
+    : "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
+    
+  const showQRCodeSvg = amount !== "500";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -52,36 +59,48 @@ export const QRCodePaymentModal = ({
         <ScrollArea className="max-h-[70vh] px-1">
           <div className="flex flex-col items-center space-y-4 pr-4">
             <div className="bg-black p-4 rounded-lg">
-              <div className="flex flex-col items-center text-white mb-2">
-                <div className="flex items-center">
-                  <div className="bg-[#FF6B00] text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">
-                    <span className="text-xl font-bold">S</span>
+              {amount === "500" ? (
+                // Show the uploaded image for the ₹500 plan
+                <img 
+                  src={qrCodeImage} 
+                  alt="Payment QR Code"
+                  className="w-full max-w-[300px]" 
+                />
+              ) : (
+                // For other plans, use the QR code generator with the appropriate amount
+                <>
+                  <div className="flex flex-col items-center text-white mb-2">
+                    <div className="flex items-center">
+                      <div className="bg-[#FF6B00] text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">
+                        <span className="text-xl font-bold">S</span>
+                      </div>
+                      <span className="text-lg">Sharefile.lovable.app</span>
+                    </div>
                   </div>
-                  <span className="text-lg">Sharefile.lovable.app</span>
-                </div>
-              </div>
-              <QRCodeSVG 
-                value={`upi://pay?pa=sharefile.lovable.app@okicici&pn=Sharefile+Payment&am=${amount}&cu=INR&tn=Payment+for+${planName}+Plan`} 
-                size={200}
-                imageSettings={{
-                  src: "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png",
-                  height: 40,
-                  width: 40,
-                  excavate: true,
-                }}
-              />
-              <div className="text-center text-white mt-2">
-                <p>Scan to pay with any UPI app</p>
-                <div className="flex items-center justify-center mt-2">
-                  <img 
-                    src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" 
-                    alt="Bank logo" 
-                    className="h-8 w-8 mr-2"
+                  <QRCodeSVG 
+                    value={`upi://pay?pa=sharefile.lovable.app@okicici&pn=Sharefile+Payment&am=${amount}&cu=INR&tn=Payment+for+${planName}+Plan`} 
+                    size={200}
+                    imageSettings={{
+                      src: "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png",
+                      height: 40,
+                      width: 40,
+                      excavate: true,
+                    }}
                   />
-                  <span>Bank of India 1976</span>
-                </div>
-                <p className="mt-2">UPI ID: sharefile.lovable.app@okicici</p>
-              </div>
+                  <div className="text-center text-white mt-2">
+                    <p>Scan to pay with any UPI app</p>
+                    <div className="flex items-center justify-center mt-2">
+                      <img 
+                        src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" 
+                        alt="Bank logo" 
+                        className="h-8 w-8 mr-2"
+                      />
+                      <span>Bank of India 1976</span>
+                    </div>
+                    <p className="mt-2">UPI ID: sharefile.lovable.app@okicici</p>
+                  </div>
+                </>
+              )}
             </div>
             
             <div className="flex space-x-2 w-full">

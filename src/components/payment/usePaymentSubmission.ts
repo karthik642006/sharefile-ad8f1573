@@ -104,8 +104,13 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
   };
 
   const handleDownload = () => {
+    const amount = planPrice.replace('₹', '');
+    const qrImagePath = amount === "500" 
+      ? "/lovable-uploads/23740b0c-7e08-42c9-b81d-976489b948a0.png"
+      : "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
+      
     const link = document.createElement('a');
-    link.href = "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
+    link.href = qrImagePath;
     link.download = `payment-qr-code-${planId}.png`;
     document.body.appendChild(link);
     link.click();
@@ -114,8 +119,13 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
   
   const handleShare = async () => {
     try {
+      const amount = planPrice.replace('₹', '');
+      const qrImagePath = amount === "500" 
+        ? "/lovable-uploads/23740b0c-7e08-42c9-b81d-976489b948a0.png"
+        : "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
+        
       // Create a blob from the QR code image
-      const response = await fetch("/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png");
+      const response = await fetch(qrImagePath);
       const blob = await response.blob();
       
       // Create a file from the blob

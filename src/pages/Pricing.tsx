@@ -101,6 +101,7 @@ const Pricing = () => {
         description: "Please log in to purchase a plan",
         variant: "destructive",
       });
+      navigate("/login");
       return;
     }
     
@@ -174,12 +175,14 @@ const Pricing = () => {
         </div>
       </div>
 
-      {/* QR Code Payment Modal */}
+      {/* QR Code Payment Modal with Transaction ID form */}
       {selectedPlan && (
         <QRCodePaymentModal
           isOpen={qrModalOpen}
           onClose={() => setQrModalOpen(false)}
           planPrice={selectedPlan.price}
+          planId={selectedPlan.id}
+          planName={selectedPlan.name}
           upiId="sharefile.lovable.app@okicici"
         />
       )}

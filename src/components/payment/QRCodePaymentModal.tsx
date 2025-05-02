@@ -1,15 +1,20 @@
 
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { shareQRCode } from '@/utils/shareUtils';
+import { PaymentForm } from './PaymentForm'; 
+import { useForm } from 'react-hook-form';
+import { PaymentFormValues, usePaymentSubmission } from './usePaymentSubmission';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   planPrice?: number;
+  planId?: string;
+  planName?: string;
   upiId?: string;
 }
 
@@ -17,8 +22,24 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
   isOpen,
   onClose,
   planPrice = 500,
+  planId = "yearly",
+  planName = "Yearly Plan",
   upiId = 'sharefile.lovable.app@okicici',
 }) => {
+  const form = useForm<PaymentFormValues>({
+    defaultValues: {
+      transactionId: '',
+    },
+  });
+
+  const { isProcessing, handleSubmit } = usePaymentSubmission({ 
+    planId, 
+    planName, 
+    planPrice: `₹${planPrice}`,
+    onClose,
+    user: null
+  });
+
   const handleCopyUPI = () => {
     navigator.clipboard.writeText(upiId);
     toast.success('UPI ID copied to clipboard');
@@ -62,16 +83,24 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     }
   };
 
+  // Use the new 50 rs QR code for the monthly plan
+  const qrCodeSrc = planPrice === 50 
+    ? "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png" 
+    : "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center">Scan to pay with any UPI app</DialogTitle>
+          <DialogDescription className="text-center">
+            Please scan the QR code below and enter the transaction ID
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center space-y-4 p-4 bg-gray-900 rounded-lg">
           <div className="bg-white p-2 rounded-lg">
             <img 
-              src="/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png" 
+              src={qrCodeSrc} 
               alt="Payment QR Code"
               className="w-64 h-64 object-contain payment-qr-image"
             />
@@ -90,8 +119,18 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
             </Button>
           </div>
         </div>
+
+        {/* Transaction ID input form */}
+        <div className="mt-4 bg-white rounded-lg p-4">
+          <PaymentForm 
+            form={form} 
+            isProcessing={isProcessing}
+            onSubmit={handleSubmit}
+          />
+        </div>
+
         <div className="flex justify-center mt-4">
-          <Button onClick={handleShareQR}>Share QR Code</Button>
+          <Button onClick={handleShareQR} variant="outline">Share QR Code</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -49,6 +49,11 @@ export const shareUrl = async (url: string, title?: string, text?: string) => {
   }
 };
 
+export const getShareableLink = (fileId: string) => {
+  const origin = window.location.origin;
+  return `${origin}/download/${fileId}`;
+};
+
 export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, text?: string) => {
   try {
     // Convert canvas to blob

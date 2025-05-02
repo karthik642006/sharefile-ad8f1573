@@ -104,10 +104,17 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
   };
 
   const handleDownload = () => {
+    // Determine which QR code to download based on the plan
     const amount = planPrice.replace('₹', '');
-    const qrImagePath = amount === "500" 
-      ? "/lovable-uploads/23740b0c-7e08-42c9-b81d-976489b948a0.png"
-      : "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
+    let qrImagePath;
+    
+    if (amount === "10") {
+      qrImagePath = "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png";
+    } else if (amount === "50") {
+      qrImagePath = "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png";
+    } else {
+      qrImagePath = "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+    }
       
     const link = document.createElement('a');
     link.href = qrImagePath;
@@ -115,14 +122,25 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    toast({
+      title: "QR Code Downloaded",
+      description: "The QR code has been downloaded to your device.",
+    });
   };
   
   const handleShare = async () => {
     try {
       const amount = planPrice.replace('₹', '');
-      const qrImagePath = amount === "500" 
-        ? "/lovable-uploads/23740b0c-7e08-42c9-b81d-976489b948a0.png"
-        : "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
+      let qrImagePath;
+      
+      if (amount === "10") {
+        qrImagePath = "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png";
+      } else if (amount === "50") {
+        qrImagePath = "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png";
+      } else {
+        qrImagePath = "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+      }
         
       // Create a blob from the QR code image
       const response = await fetch(qrImagePath);
@@ -131,25 +149,31 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
       // Create a file from the blob
       const file = new File([blob], `payment-qr-code-${planId}.png`, { type: blob.type });
       
-      if (navigator.share && navigator.canShare({ files: [file] })) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `Payment QR Code for ${planName}`,
-          text: `Scan this QR code to pay ₹${planPrice.replace('₹', '')} for ${planName} plan`,
+          text: `Scan this QR code to pay ${planPrice} for ${planName} plan`,
           files: [file],
+        });
+        
+        toast({
+          title: "QR Code Shared",
+          description: "The QR code has been shared successfully.",
         });
       } else if (navigator.share) {
         // Fallback to regular share if file sharing not supported
         await navigator.share({
           title: `Payment QR Code for ${planName}`,
-          text: `Scan this QR code to pay ₹${planPrice.replace('₹', '')} for ${planName} plan on sharefile.lovable.app`,
+          text: `Scan this QR code to pay ${planPrice} for ${planName} plan on sharefile.lovable.app`,
           url: window.location.href,
         });
-      } else {
+        
         toast({
-          title: "Share not supported",
-          description: "Your browser doesn't support the Web Share API",
-          variant: "destructive"
+          title: "QR Code Link Shared",
+          description: "The QR code link has been shared successfully.",
         });
+      } else {
+        handleDownload(); // Fallback to download if sharing not supported
       }
     } catch (error) {
       console.error("Error sharing:", error);

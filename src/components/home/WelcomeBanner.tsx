@@ -8,13 +8,27 @@ import { shareApp } from "@/utils/shareUtils";
 
 export const WelcomeBanner = () => {
   const handleInviteFriends = async () => {
-    const shared = await shareApp();
-    if (!shared) {
-      // Fallback to clipboard if Web Share API is not available
-      await navigator.clipboard.writeText(window.location.origin);
-      toast({
-        title: "App Link Copied!",
-        description: "The link to sharefile.lovable.app has been copied to your clipboard",
+    try {
+      const result = await shareApp();
+      if (result.success) {
+        toast({
+          title: "App Shared!",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Sharing Failed",
+          description: "Could not share app, the link has been copied to clipboard instead",
+        });
+      }
+    } catch (error) {
+      console.error("Error sharing app:", error);
+      // Final fallback
+      navigator.clipboard.writeText(window.location.origin).then(() => {
+        toast({
+          title: "Link Copied",
+          description: "App link copied to clipboard",
+        });
       });
     }
   };

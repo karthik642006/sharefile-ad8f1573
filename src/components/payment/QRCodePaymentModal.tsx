@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { Copy } from 'lucide-react';
+import { Copy, Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { shareQRCode } from '@/utils/shareUtils';
 import { PaymentForm } from './PaymentForm'; 
@@ -32,7 +32,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     },
   });
 
-  const { isProcessing, handleSubmit } = usePaymentSubmission({ 
+  const { isProcessing, handleSubmit, handleDownload, handleShare } = usePaymentSubmission({ 
     planId, 
     planName, 
     planPrice: `₹${planPrice}`,
@@ -70,7 +70,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
       ctx.drawImage(qrImage, 0, 0, canvas.width, canvas.height);
       
       // Share the QR code using the shareQRCode utility
-      const result = await shareQRCode(canvas, 'Share Flow Hub Payment', `Pay ₹${planPrice} to ${upiId}`);
+      const result = await shareQRCode(canvas, `Share ${planName} Payment QR Code`, `Pay ₹${planPrice} to ${upiId}`);
       
       if (result.success) {
         toast.success(result.message);
@@ -83,10 +83,12 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     }
   };
 
-  // Use the new 50 rs QR code for the monthly plan
-  const qrCodeSrc = planPrice === 50 
-    ? "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png" 
-    : "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+  // Use the uploaded QR code for the 10rs plan and existing QR for others
+  const qrCodeSrc = planPrice === 10 
+    ? "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png" 
+    : planPrice === 50
+      ? "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png"
+      : "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -129,8 +131,15 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
           />
         </div>
 
-        <div className="flex justify-center mt-4">
-          <Button onClick={handleShareQR} variant="outline">Share QR Code</Button>
+        <div className="flex justify-center mt-4 gap-3">
+          <Button onClick={handleDownload} variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Download QR
+          </Button>
+          <Button onClick={handleShareQR} variant="outline" className="flex items-center gap-2">
+            <Share className="h-4 w-4" />
+            Share QR Code
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -71,13 +71,21 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
     const file = new File([blob], 'qrcode.png', { type: 'image/png' });
     
     // Use Web Share API if available
-    if (navigator.share) {
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
         title: title || 'Share QR Code',
         text: text || 'Scan this QR code',
         files: [file]
       });
       return { success: true, message: 'QR Code shared successfully' };
+    } else if (navigator.share) {
+      // Fallback to sharing URL if file sharing is not supported
+      await navigator.share({
+        title: title || 'Share QR Code',
+        text: text || 'Scan this QR code',
+        url: window.location.href
+      });
+      return { success: true, message: 'QR Code link shared successfully' };
     } else {
       // Fallback if Web Share API is not supported
       const dataUrl = qrCanvas.toDataURL('image/png');
@@ -95,11 +103,38 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
   }
 };
 
-// Add the new shareApp function
+// Enhanced shareApp function that works with social media apps
 export const shareApp = async () => {
   const appUrl = window.location.origin;
   const title = 'ShareFile - Securely share your files';
   const text = 'Check out ShareFile, a secure way to share your files instantly!';
   
-  return await shareUrl(appUrl, title, text);
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: title,
+        text: text,
+        url: appUrl
+      });
+      return { success: true, message: 'App shared successfully' };
+    } catch (error) {
+      console.error('Error sharing app:', error);
+      try {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(appUrl);
+        return { success: true, message: 'App URL copied to clipboard' };
+      } catch (clipboardError) {
+        return { success: false, message: 'Failed to share app' };
+      }
+    }
+  } else {
+    // Fallback for browsers that don't support the Web Share API
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      return { success: true, message: 'App URL copied to clipboard' };
+    } catch (error) {
+      console.error('Error copying URL:', error);
+      return { success: false, message: 'Failed to copy app URL to clipboard' };
+    }
+  }
 };

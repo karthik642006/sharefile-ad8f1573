@@ -8,6 +8,7 @@ import { shareQRCode } from '@/utils/shareUtils';
 import { PaymentForm } from './PaymentForm'; 
 import { useForm } from 'react-hook-form';
 import { PaymentFormValues, usePaymentSubmission } from './usePaymentSubmission';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
@@ -99,48 +100,51 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
             Please scan the QR code below and enter the transaction ID
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col items-center space-y-4 p-4 bg-gray-900 rounded-lg">
-          <div className="bg-white p-2 rounded-lg">
-            <img 
-              src={qrCodeSrc} 
-              alt="Payment QR Code"
-              className="w-64 h-64 object-contain payment-qr-image"
+        
+        <ScrollArea className="max-h-[70vh]">
+          <div className="flex flex-col items-center space-y-4 p-4 bg-gray-900 rounded-lg">
+            <div className="bg-white p-2 rounded-lg">
+              <img 
+                src={qrCodeSrc} 
+                alt="Payment QR Code"
+                className="w-64 h-64 object-contain payment-qr-image"
+              />
+            </div>
+            <div className="flex items-center space-x-2 text-white">
+              <img src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" alt="Bank Logo" className="h-8" />
+              <span className="text-lg">Bank of India 1976</span>
+            </div>
+            <div className="flex items-center justify-between w-full text-white">
+              <div className="flex-1">
+                <p>UPI ID: {upiId}</p>
+                <p className="font-bold">| ₹{planPrice}</p>
+              </div>
+              <Button variant="outline" size="icon" onClick={handleCopyUPI}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="flex justify-center w-full gap-3">
+              <Button onClick={handleDownload} variant="outline" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Download QR
+              </Button>
+              <Button onClick={handleShareQR} variant="outline" className="flex items-center gap-2">
+                <Share className="h-4 w-4" />
+                Share QR Code
+              </Button>
+            </div>
+          </div>
+
+          {/* Transaction ID input form */}
+          <div className="mt-4 bg-white rounded-lg p-4">
+            <PaymentForm 
+              form={form} 
+              isProcessing={isProcessing}
+              onSubmit={handleSubmit}
             />
           </div>
-          <div className="flex items-center space-x-2 text-white">
-            <img src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" alt="Bank Logo" className="h-8" />
-            <span className="text-lg">Bank of India 1976</span>
-          </div>
-          <div className="flex items-center justify-between w-full text-white">
-            <div className="flex-1">
-              <p>UPI ID: {upiId}</p>
-              <p className="font-bold">| ₹{planPrice}</p>
-            </div>
-            <Button variant="outline" size="icon" onClick={handleCopyUPI}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Transaction ID input form */}
-        <div className="mt-4 bg-white rounded-lg p-4">
-          <PaymentForm 
-            form={form} 
-            isProcessing={isProcessing}
-            onSubmit={handleSubmit}
-          />
-        </div>
-
-        <div className="flex justify-center mt-4 gap-3">
-          <Button onClick={handleDownload} variant="outline" className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Download QR
-          </Button>
-          <Button onClick={handleShareQR} variant="outline" className="flex items-center gap-2">
-            <Share className="h-4 w-4" />
-            Share QR Code
-          </Button>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

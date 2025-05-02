@@ -1,137 +1,112 @@
 
-import React from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { usePaymentSubmission, PaymentFormValues } from "./usePaymentSubmission";
-import { PaymentForm } from "./PaymentForm";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import QRCode from 'qrcode.react';
+import { Button } from '../ui/button';
+import { Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  planId: string;
-  planName: string;
-  planPrice: string;
+  planPrice?: number;
+  upiId?: string;
 }
 
-export const QRCodePaymentModal = ({ 
-  isOpen, 
-  onClose, 
-  planId, 
-  planName, 
-  planPrice 
-}: QRCodePaymentModalProps) => {
-  const form = useForm<PaymentFormValues>({
-    defaultValues: {
-      transactionId: "",
+export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
+  isOpen,
+  onClose,
+  planPrice = 500,
+  upiId = 'sharefile.lovable.app@okicici',
+}) => {
+  const paymentValue = `upi://pay?pa=${upiId}&am=${planPrice}&cu=INR&pn=ShareFlow%20Hub`;
+
+  const handleCopyUPI = () => {
+    navigator.clipboard.writeText(upiId);
+    toast.success('UPI ID copied to clipboard');
+  };
+
+  const handleShareQR = async () => {
+    try {
+      const canvas = document.querySelector('canvas');
+      if (!canvas) {
+        toast.error('QR Code not found');
+        return;
+      }
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            toast.error('Failed to generate image');
+          }
+        }, 'image/png');
+      });
+      
+      // Create file from blob
+      const file = new File([blob], 'qrcode.png', { type: 'image/png' });
+      
+      // Use Web Share API if available
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Share Flow Hub Payment',
+          text: `Pay ₹${planPrice} to ${upiId}`,
+          files: [file]
+        });
+        toast.success('QR Code shared successfully');
+      } else {
+        // Fallback if Web Share API is not supported
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'share-flow-hub-payment.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('QR Code downloaded successfully');
+      }
+    } catch (error) {
+      console.error('Error sharing QR code:', error);
+      toast.error('Failed to share QR Code');
     }
-  });
-
-  const { isProcessing, handleSubmit, handleDownload, handleShare } = usePaymentSubmission({
-    planId,
-    planName,
-    planPrice,
-    onClose,
-    user: null, // This will be populated from AuthContext
-  });
-
-  const amount = planPrice.replace('₹', '');
-  
-  // Use the new QR code image for ₹500 plan only
-  const qrCodeImage = amount === "500" 
-    ? "/lovable-uploads/23740b0c-7e08-42c9-b81d-976489b948a0.png"
-    : "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png";
-    
-  const showQRCodeSvg = amount !== "500";
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Pay ₹{amount} for {planName}</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Scan the QR code below with any UPI payment app
-          </DialogDescription>
+          <DialogTitle className="text-center">Scan to pay with any UPI app</DialogTitle>
         </DialogHeader>
-
-        <ScrollArea className="max-h-[70vh] px-1">
-          <div className="flex flex-col items-center space-y-4 pr-4">
-            <div className="bg-black p-4 rounded-lg">
-              {amount === "500" ? (
-                // Show the uploaded image for the ₹500 plan
-                <img 
-                  src={qrCodeImage} 
-                  alt="Payment QR Code"
-                  className="w-full max-w-[300px]" 
-                />
-              ) : (
-                // For other plans, use the QR code generator with the appropriate amount
-                <>
-                  <div className="flex flex-col items-center text-white mb-2">
-                    <div className="flex items-center">
-                      <div className="bg-[#FF6B00] text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">
-                        <span className="text-xl font-bold">S</span>
-                      </div>
-                      <span className="text-lg">Sharefile.lovable.app</span>
-                    </div>
-                  </div>
-                  <QRCodeSVG 
-                    value={`upi://pay?pa=sharefile.lovable.app@okicici&pn=Sharefile+Payment&am=${amount}&cu=INR&tn=Payment+for+${planName}+Plan`} 
-                    size={200}
-                    imageSettings={{
-                      src: "/lovable-uploads/cc644bac-3541-42c2-8ae3-16be39e21429.png",
-                      height: 40,
-                      width: 40,
-                      excavate: true,
-                    }}
-                  />
-                  <div className="text-center text-white mt-2">
-                    <p>Scan to pay with any UPI app</p>
-                    <div className="flex items-center justify-center mt-2">
-                      <img 
-                        src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" 
-                        alt="Bank logo" 
-                        className="h-8 w-8 mr-2"
-                      />
-                      <span>Bank of India 1976</span>
-                    </div>
-                    <p className="mt-2">UPI ID: sharefile.lovable.app@okicici</p>
-                  </div>
-                </>
-              )}
-            </div>
-            
-            <div className="flex space-x-2 w-full">
-              <Button 
-                onClick={handleDownload} 
-                className="flex-1 bg-[#33C3F0] hover:bg-[#1493c7]"
-              >
-                Download QR
-              </Button>
-              <Button 
-                onClick={handleShare} 
-                className="flex-1 bg-[#33C3F0] hover:bg-[#1493c7]"
-              >
-                Share QR
-              </Button>
-            </div>
-            
-            <div className="w-full border-t pt-4 mb-4">
-              <div className="text-center mb-3">
-                <p className="text-sm font-medium">Pay ₹{amount} using any UPI app</p>
-                <p className="text-xs text-muted-foreground">After payment, enter the transaction ID below</p>
-              </div>
-              <PaymentForm 
-                form={form} 
-                isProcessing={isProcessing}
-                onSubmit={handleSubmit}
-              />
-            </div>
+        <div className="flex flex-col items-center space-y-4 p-4 bg-gray-900 rounded-lg">
+          <div className="bg-white p-2 rounded-lg">
+            <img 
+              src="/lovable-uploads/3513aa2f-419d-4b06-8ef4-4145750d9a72.png" 
+              alt="Payment QR Code"
+              className="w-64 h-64 object-contain"
+            />
           </div>
-        </ScrollArea>
+          <div className="flex items-center space-x-2 text-white">
+            <img src="/lovable-uploads/9676781a-ff43-4b24-b512-340dd4f4ec58.png" alt="Bank Logo" className="h-8" />
+            <span className="text-lg">Bank of India 1976</span>
+          </div>
+          <div className="flex items-center justify-between w-full text-white">
+            <div className="flex-1">
+              <p>UPI ID: {upiId}</p>
+              <p className="font-bold">| ₹{planPrice}</p>
+            </div>
+            <Button variant="outline" size="icon" onClick={handleCopyUPI}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex justify-center mt-4">
+          <Button onClick={handleShareQR}>Share QR Code</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default QRCodePaymentModal;

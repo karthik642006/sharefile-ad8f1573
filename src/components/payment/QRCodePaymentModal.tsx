@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import QRCode from 'qrcode.react';
 import { Button } from '../ui/button';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { shareQRCode } from '@/utils/shareUtils';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
@@ -19,8 +19,6 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
   planPrice = 500,
   upiId = 'sharefile.lovable.app@okicici',
 }) => {
-  const paymentValue = `upi://pay?pa=${upiId}&am=${planPrice}&cu=INR&pn=ShareFlow%20Hub`;
-
   const handleCopyUPI = () => {
     navigator.clipboard.writeText(upiId);
     toast.success('UPI ID copied to clipboard');
@@ -28,44 +26,35 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
 
   const handleShareQR = async () => {
     try {
-      const canvas = document.querySelector('canvas');
-      if (!canvas) {
+      // Get the QR code image element
+      const qrImage = document.querySelector('.payment-qr-image') as HTMLImageElement;
+      
+      if (!qrImage) {
         toast.error('QR Code not found');
         return;
       }
       
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            toast.error('Failed to generate image');
-          }
-        }, 'image/png');
-      });
+      // Create a canvas element to convert the image to a canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = qrImage.naturalWidth || 500;
+      canvas.height = qrImage.naturalHeight || 500;
       
-      // Create file from blob
-      const file = new File([blob], 'qrcode.png', { type: 'image/png' });
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        toast.error('Failed to create canvas context');
+        return;
+      }
       
-      // Use Web Share API if available
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Share Flow Hub Payment',
-          text: `Pay ₹${planPrice} to ${upiId}`,
-          files: [file]
-        });
-        toast.success('QR Code shared successfully');
+      // Draw the image on the canvas
+      ctx.drawImage(qrImage, 0, 0, canvas.width, canvas.height);
+      
+      // Share the QR code using the shareQRCode utility
+      const result = await shareQRCode(canvas, 'Share Flow Hub Payment', `Pay ₹${planPrice} to ${upiId}`);
+      
+      if (result.success) {
+        toast.success(result.message);
       } else {
-        // Fallback if Web Share API is not supported
-        const dataUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = 'share-flow-hub-payment.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast.success('QR Code downloaded successfully');
+        toast.error(result.message);
       }
     } catch (error) {
       console.error('Error sharing QR code:', error);
@@ -82,9 +71,9 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
         <div className="flex flex-col items-center space-y-4 p-4 bg-gray-900 rounded-lg">
           <div className="bg-white p-2 rounded-lg">
             <img 
-              src="/lovable-uploads/3513aa2f-419d-4b06-8ef4-4145750d9a72.png" 
+              src="/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png" 
               alt="Payment QR Code"
-              className="w-64 h-64 object-contain"
+              className="w-64 h-64 object-contain payment-qr-image"
             />
           </div>
           <div className="flex items-center space-x-2 text-white">

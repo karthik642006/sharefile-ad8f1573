@@ -89,3 +89,12 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
     return { success: false, message: 'Failed to share QR Code' };
   }
 };
+
+// Add the new shareApp function
+export const shareApp = async () => {
+  const appUrl = window.location.origin;
+  const title = 'ShareFile - Securely share your files';
+  const text = 'Check out ShareFile, a secure way to share your files instantly!';
+  
+  return await shareUrl(appUrl, title, text);
+};

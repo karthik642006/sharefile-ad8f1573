@@ -1,13 +1,13 @@
 
 import React from "react";
-import { File, Folder, Search, Link } from "lucide-react";
+import { File, Folder, Search, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link as RouterLink } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { shareApp } from "@/utils/shareUtils";
 
 export const WelcomeBanner = () => {
-  const handleShareAppLink = async () => {
+  const handleInviteFriends = async () => {
     const shared = await shareApp();
     if (!shared) {
       // Fallback to clipboard if Web Share API is not available
@@ -43,10 +43,10 @@ export const WelcomeBanner = () => {
             variant="outline" 
             size="lg"
             className="w-full md:w-auto flex items-center gap-2"
-            onClick={handleShareAppLink}
+            onClick={handleInviteFriends}
           >
-            <Link size={18} />
-            Share App Link
+            <UserPlus size={18} />
+            Invite Friends
           </Button>
         </div>
       </div>

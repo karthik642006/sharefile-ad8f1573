@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ const plans = [
     id: "basic",
     name: "Free",
     price: "₹0",
+    priceValue: 0,
     duration: "Forever",
     features: [
       "Up to 3 files per month",
@@ -24,6 +26,7 @@ const plans = [
     id: "5day",
     name: "5 Day Plan",
     price: "₹10",
+    priceValue: 10,
     duration: "5 days",
     features: [
       "Up to 2 files",
@@ -38,6 +41,7 @@ const plans = [
     id: "monthly",
     name: "Monthly",
     price: "₹50",
+    priceValue: 50,
     duration: "1 Month",
     features: [
       "Up to 10 files per month",
@@ -52,6 +56,7 @@ const plans = [
     id: "yearly",
     name: "Yearly",
     price: "₹500",
+    priceValue: 500,
     duration: "1 Year",
     features: [
       "Up to 100 files per year",
@@ -87,9 +92,9 @@ const Pricing = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{id: string; name: string; price: string} | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<{id: string; name: string; price: number} | null>(null);
 
-  const subscribeToPlan = async (planId: string, planName: string, planPrice: string) => {
+  const subscribeToPlan = async (planId: string, planName: string, planPrice: number) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -151,7 +156,7 @@ const Pricing = () => {
                   : "bg-[#33C3F0] hover:bg-[#1493c7]"
                 }
                 disabled={isProcessing === plan.id}
-                onClick={() => subscribeToPlan(plan.id, plan.name, plan.price)}
+                onClick={() => subscribeToPlan(plan.id, plan.name, plan.priceValue)}
               >
                 {isProcessing === plan.id 
                   ? "Processing..." 
@@ -174,9 +179,8 @@ const Pricing = () => {
         <QRCodePaymentModal
           isOpen={qrModalOpen}
           onClose={() => setQrModalOpen(false)}
-          planId={selectedPlan.id}
-          planName={selectedPlan.name}
           planPrice={selectedPlan.price}
+          upiId="sharefile.lovable.app@okicici"
         />
       )}
     </section>

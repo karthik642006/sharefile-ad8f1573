@@ -25,19 +25,6 @@ const sidebarItems = [{
 export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {sidebarItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    
-                  </SidebarMenuButton>
-                </SidebarMenuItem>)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+      
     </Sidebar>;
 }

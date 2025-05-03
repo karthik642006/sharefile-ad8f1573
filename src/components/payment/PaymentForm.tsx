@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { PaymentFormValues } from "./usePaymentSubmission";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PaymentFormProps {
   form: UseFormReturn<PaymentFormValues>;
@@ -13,6 +14,9 @@ interface PaymentFormProps {
 }
 
 export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) => {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
@@ -34,13 +38,72 @@ export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) 
               </FormItem>
             )}
           />
+
+          {!isLoggedIn && (
+            <>
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>Username:</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter your username"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>Email:</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="profilePassword"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>Profile Password:</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Create a password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-gray-500">This password will be used to access your purchases</p>
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
         </div>
         
         <div className="flex justify-end">
           <Button
             type="submit"
             className="w-full bg-[#33C3F0] hover:bg-[#1493c7]"
-            disabled={isProcessing || !form.getValues("transactionId") || form.getValues("transactionId").length !== 12}
+            disabled={isProcessing || 
+              !form.getValues("transactionId") || 
+              form.getValues("transactionId").length !== 12 ||
+              (!isLoggedIn && (!form.getValues("username") || !form.getValues("email")))
+            }
           >
             {isProcessing ? "Processing..." : "Deposit & Activate Plan"}
           </Button>

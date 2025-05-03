@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +14,9 @@ interface PaymentSubmissionOptions {
 
 export interface PaymentFormValues {
   transactionId: string;
+  username?: string;
+  email?: string;
+  profilePassword?: string;
 }
 
 export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, user }: PaymentSubmissionOptions) => {
@@ -57,32 +59,39 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
       }
       
       let userId = user?.id;
-      
-      // If user is not logged in, show login prompt
-      if (!userId) {
-        toast({
-          title: "Login Required",
-          description: "Please login or sign up to activate your plan",
-        });
-        
-        onClose();
-        navigate("/login");
-        return;
-      }
+      let userEmail = user?.email;
+      let username = values.username;
       
       // Extract amount from planPrice (remove ₹ symbol)
       const amount = parseInt(planPrice.replace(/[^\d]/g, ''));
       
-      // Store subscription record with transaction ID
-      const { error } = await supabase.from('subscriptions').insert({
-        user_id: userId,
-        plan_type: planId,
-        amount: amount,
-        expires_at: expiresAt.toISOString(),
-        transaction_id: values.transactionId,
-      });
+      // If user is logged in, store subscription in subscriptions table
+      if (userId && userEmail) {
+        // Store subscription record with transaction ID
+        const { error } = await supabase.from('subscriptions').insert({
+          user_id: userId,
+          plan_type: planId,
+          amount: amount,
+          expires_at: expiresAt.toISOString(),
+          transaction_id: values.transactionId,
+        });
+        
+        if (error) throw error;
+      }
       
-      if (error) throw error;
+      // For both logged in and guest users, store in plan_purchases table
+      if (values.email || userEmail) {
+        const { error: purchaseError } = await supabase.from('plan_purchases').insert({
+          username: username || (user?.user_metadata?.username as string) || 'guest',
+          email: values.email || userEmail || '',
+          profile_password: values.profilePassword || null,
+          transaction_id: values.transactionId,
+          plan_type: planId,
+          expires_at: expiresAt.toISOString()
+        });
+        
+        if (purchaseError) throw purchaseError;
+      }
       
       toast({
         title: "Plan Activated",

@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { PaymentFormValues, usePaymentSubmission } from './usePaymentSubmission';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { shareQRCode } from '@/utils/shareUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
@@ -29,10 +30,14 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
 }) => {
   // Create a reference to the QR code image
   const qrImageRef = useRef<HTMLImageElement | null>(null);
+  const { user } = useAuth();
   
   const form = useForm<PaymentFormValues>({
     defaultValues: {
       transactionId: '',
+      username: '',
+      email: '',
+      profilePassword: '',
     },
   });
 
@@ -41,7 +46,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     planName, 
     planPrice: `₹${planPrice}`,
     onClose,
-    user: null
+    user
   });
 
   const handleCopyUPI = () => {

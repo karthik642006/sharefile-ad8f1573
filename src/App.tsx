@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,18 +17,15 @@ import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AppProvider } from "./contexts/AppContext";
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 60000,
-    },
-  },
+      staleTime: 60000
+    }
+  }
 });
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -41,7 +37,7 @@ const App = () => (
               <div className="min-h-screen flex flex-col w-full bg-[#F1F1F1]">
                 <AppSidebar />
                 <main className="flex-1 min-h-screen w-full max-w-[100vw] overflow-x-hidden">
-                  <SidebarTrigger />
+                  
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/profile" element={<Profile />} />
@@ -60,7 +56,5 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
-);
-
+  </QueryClientProvider>;
 export default App;

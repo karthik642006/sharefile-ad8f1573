@@ -1,6 +1,6 @@
 
 import React from "react";
-import { File, Folder, Share, Instagram, Facebook, Whatsapp } from "lucide-react";
+import { File, Folder, Share, Instagram, Facebook, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link as RouterLink } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -76,7 +76,7 @@ export const WelcomeBanner = () => {
           </div>
           <div className="flex gap-2 mt-2 md:mt-0">
             <Button variant="outline" size="icon" onClick={handleInviteFriends} className="rounded-full bg-white shadow-sm">
-              <Whatsapp className="h-5 w-5 text-green-500" />
+              <MessageCircle className="h-5 w-5 text-green-500" />
             </Button>
             <Button variant="outline" size="icon" onClick={handleInviteFriends} className="rounded-full bg-white shadow-sm">
               <Facebook className="h-5 w-5 text-blue-600" />

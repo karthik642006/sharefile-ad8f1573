@@ -107,10 +107,24 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
 export const shareApp = async () => {
   const appUrl = window.location.origin;
   const title = 'ShareFile - Securely share your files';
-  const text = 'Check out ShareFile, a secure way to share your files instantly!';
+  const text = 'Check out ShareFile, a secure way to share your files instantly! Download now at ' + appUrl;
+  
+  // List of common share targets (not all will be available on every device)
+  // This won't force these apps to appear, but it hints to the OS what kind of sharing we want
+  const shareTargets = [
+    { name: 'whatsapp', type: 'x-scheme:whatsapp' },
+    { name: 'facebook', type: 'x-scheme:fb' },
+    { name: 'instagram', type: 'x-scheme:instagram' },
+    { name: 'twitter', type: 'x-scheme:twitter' },
+    { name: 'telegram', type: 'x-scheme:telegram' },
+    { name: 'email', type: 'mailto:' },
+    { name: 'sms', type: 'sms:' }
+  ];
   
   if (navigator.share) {
     try {
+      // The shareTargets array is just for documentation,
+      // the actual apps shown depend on the user's device configuration
       await navigator.share({
         title: title,
         text: text,

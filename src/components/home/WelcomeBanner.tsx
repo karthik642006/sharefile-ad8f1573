@@ -1,6 +1,6 @@
 
 import React from "react";
-import { File, Folder, Search, UserPlus } from "lucide-react";
+import { File, Folder, Search, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link as RouterLink } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -59,7 +59,7 @@ export const WelcomeBanner = () => {
             className="w-full md:w-auto flex items-center gap-2"
             onClick={handleInviteFriends}
           >
-            <UserPlus size={18} />
+            <Share size={18} />
             Invite Friends
           </Button>
         </div>

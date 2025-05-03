@@ -48,39 +48,48 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
 
   const handleShareQR = async () => {
     try {
-      // Get the QR code image element
-      const qrImage = document.querySelector('.payment-qr-image') as HTMLImageElement;
+      // Determine which QR code to share based on the plan
+      let qrImagePath;
       
-      if (!qrImage) {
-        toast.error('QR Code not found');
-        return;
-      }
-      
-      // Create a canvas element to convert the image to a canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = qrImage.naturalWidth || 500;
-      canvas.height = qrImage.naturalHeight || 500;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        toast.error('Failed to create canvas context');
-        return;
-      }
-      
-      // Draw the image on the canvas
-      ctx.drawImage(qrImage, 0, 0, canvas.width, canvas.height);
-      
-      // Share the QR code using the shareQRCode utility
-      const result = await shareQRCode(canvas, `Share ${planName} Payment QR Code`, `Pay ₹${planPrice} to ${upiId}`);
-      
-      if (result.success) {
-        toast.success(result.message);
+      if (planPrice === 10) {
+        qrImagePath = "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png";
+      } else if (planPrice === 50) {
+        qrImagePath = "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png";
       } else {
-        toast.error(result.message);
+        qrImagePath = "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+      }
+        
+      // Create a blob from the QR code image
+      const response = await fetch(qrImagePath);
+      const blob = await response.blob();
+      
+      // Create a file from the blob
+      const file = new File([blob], `payment-qr-code-${planId}.png`, { type: blob.type });
+      
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Payment QR Code for ${planName}`,
+          text: `Scan this QR code to pay ₹${planPrice} for ${planName} plan`,
+          files: [file],
+        });
+        
+        toast.success('QR Code shared successfully');
+      } else if (navigator.share) {
+        // Fallback to regular share if file sharing not supported
+        await navigator.share({
+          title: `Payment QR Code for ${planName}`,
+          text: `Scan this QR code to pay ₹${planPrice} for ${planName} plan on sharefile.lovable.app`,
+          url: window.location.href,
+        });
+        
+        toast.success('QR Code link shared successfully');
+      } else {
+        handleDownload(); // Fallback to download if sharing not supported
+        toast.success('QR Code downloaded instead (sharing not supported on this device)');
       }
     } catch (error) {
-      console.error('Error sharing QR code:', error);
-      toast.error('Failed to share QR Code');
+      console.error("Error sharing:", error);
+      toast.error('Failed to share QR code');
     }
   };
 

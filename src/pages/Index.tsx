@@ -2,6 +2,7 @@
 import React from "react";
 import { WelcomeBanner } from "@/components/home/WelcomeBanner";
 import { CacheBuster } from "@/components/utils/CacheBuster";
+import { UserSearch } from "@/components/search/UserSearch";
 
 const Index = () => {
   return (
@@ -12,6 +13,7 @@ const Index = () => {
           Upload user files through online
         </div>
         <WelcomeBanner />
+        <UserSearch />
       </div>
     </section>
   );

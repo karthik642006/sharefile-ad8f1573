@@ -9,6 +9,7 @@ import { shareApp } from "@/utils/shareUtils";
 export const WelcomeBanner = () => {
   const handleInviteFriends = async () => {
     try {
+      // This will trigger the native share dialog showing available apps
       const result = await shareApp();
       if (result.success) {
         toast({

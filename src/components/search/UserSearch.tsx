@@ -26,6 +26,7 @@ export const UserSearch = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Add debounce to prevent constant re-rendering during typing
     const timer = setTimeout(() => {
       if (userSearch) {
         searchUsers(userSearch);
@@ -71,6 +72,9 @@ export const UserSearch = () => {
     }
   };
 
+  // Use a stable key for list items to prevent flickering
+  const getProfileKey = (profile: Profile) => `profile-${profile.id}`;
+
   return (
     <>
       <form className="w-full max-w-xl mb-8" onSubmit={(e) => e.preventDefault()}>
@@ -95,7 +99,10 @@ export const UserSearch = () => {
             <h3 className="px-4 py-2 bg-gray-50 font-medium text-gray-700 border-b">Users</h3>
             <div className="max-h-60 overflow-y-auto">
               {results.map((profile) => (
-                <div key={profile.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b last:border-b-0">
+                <div 
+                  key={getProfileKey(profile)} 
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b last:border-b-0"
+                >
                   <Avatar className="h-8 w-8 bg-[#9b87f5]">
                     {profile.avatar_url ? (
                       <AvatarImage 

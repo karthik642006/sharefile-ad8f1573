@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '../ui/button';
 import { Copy, Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
-import { shareQRCode } from '@/utils/shareUtils';
 import { PaymentForm } from './PaymentForm'; 
 import { useForm } from 'react-hook-form';
 import { PaymentFormValues, usePaymentSubmission } from './usePaymentSubmission';
@@ -33,7 +32,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     },
   });
 
-  const { isProcessing, handleSubmit, handleDownload, handleShare } = usePaymentSubmission({ 
+  const { isProcessing, handleSubmit, handleDownload } = usePaymentSubmission({ 
     planId, 
     planName, 
     planPrice: `₹${planPrice}`,
@@ -46,6 +45,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     toast.success('UPI ID copied to clipboard');
   };
 
+  // Enhanced QR code sharing function
   const handleShareQR = async () => {
     try {
       // Determine which QR code to share based on the plan
@@ -66,6 +66,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
       // Create a file from the blob
       const file = new File([blob], `payment-qr-code-${planId}.png`, { type: blob.type });
       
+      // Check if browser supports sharing files
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `Payment QR Code for ${planName}`,
@@ -84,12 +85,21 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
         
         toast.success('QR Code link shared successfully');
       } else {
-        handleDownload(); // Fallback to download if sharing not supported
+        // If sharing isn't supported at all, download instead
+        handleDownload();
         toast.success('QR Code downloaded instead (sharing not supported on this device)');
       }
     } catch (error) {
       console.error("Error sharing:", error);
       toast.error('Failed to share QR code');
+      
+      // Try fallback download on sharing error
+      try {
+        handleDownload();
+        toast.success('QR Code downloaded instead');
+      } catch (downloadError) {
+        toast.error('Could not download QR code');
+      }
     }
   };
 

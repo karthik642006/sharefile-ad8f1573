@@ -74,8 +74,8 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
-          title: title || 'Share QR Code',
-          text: text || 'Scan this QR code',
+          title: title || 'Pay using UPI app',
+          text: text || 'Scan this QR code with your UPI payment app',
           files: [file]
         });
         return { success: true, message: 'QR Code shared successfully' };
@@ -85,8 +85,8 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
         // If there's an error with file sharing, try URL sharing
         if (navigator.share) {
           await navigator.share({
-            title: title || 'Share QR Code',
-            text: text || 'Scan this QR code',
+            title: title || 'Pay using UPI app',
+            text: text || 'Use your favorite payment app to scan this QR code',
             url: window.location.href
           });
           return { success: true, message: 'QR Code link shared successfully' };
@@ -97,8 +97,8 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
     } else if (navigator.share) {
       // Fallback to sharing URL if file sharing is not supported
       await navigator.share({
-        title: title || 'Share QR Code',
-        text: text || 'Scan this QR code',
+        title: title || 'Pay using UPI app',
+        text: text || 'Use GPay, PhonePe or your preferred UPI app',
         url: window.location.href
       });
       return { success: true, message: 'QR Code link shared successfully' };
@@ -134,7 +134,7 @@ export const shareApp = async () => {
         text: text,
         url: appUrl
       });
-      return { success: true, message: 'App shared successfully' };
+      return { success: true, message: 'Choose an app to share with' };
     } else {
       // Fallback for browsers that don't support the Web Share API
       await navigator.clipboard.writeText(appUrl);

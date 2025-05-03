@@ -6,14 +6,20 @@ import { UserSearch } from "@/components/search/UserSearch";
 
 const Index = () => {
   return (
-    <section className="min-h-screen flex flex-col md:flex-row items-stretch bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in transition-all w-full">
+    <section className="min-h-screen flex flex-col items-stretch bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in transition-all w-full">
       <CacheBuster />
-      <div className="flex flex-1 flex-col items-center justify-start md:justify-center mt-10 md:mt-0 p-4 w-full">
-        <div className="text-center text-2xl font-semibold text-gray-700 mb-8">
+      <div className="flex flex-1 flex-col items-center justify-start p-4 w-full">
+        <div className="text-center text-2xl font-semibold text-gray-700 mb-6 mt-6">
           Upload user files through online
         </div>
+        
+        {/* User Search moved to the top */}
+        <div className="w-full max-w-xl mb-8">
+          <UserSearch />
+        </div>
+        
+        {/* Welcome Banner moved below search */}
         <WelcomeBanner />
-        <UserSearch />
       </div>
     </section>
   );

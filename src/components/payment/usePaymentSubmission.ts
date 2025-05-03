@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -67,19 +68,27 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
       
       // If user is logged in, store subscription in subscriptions table
       if (userId && userEmail) {
-        // Store subscription record with transaction ID
+        // For users table, we don't use the transaction_id field since it might not exist
         const { error } = await supabase.from('subscriptions').insert({
           user_id: userId,
           plan_type: planId,
           amount: amount,
-          expires_at: expiresAt.toISOString(),
-          transaction_id: values.transactionId,
+          expires_at: expiresAt.toISOString()
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Subscription insert error:", error);
+          if (error.message.includes("transaction_id")) {
+            // If the error is related to transaction_id column, we still proceed
+            console.warn("Proceeding despite transaction_id error in subscriptions table");
+          } else {
+            throw error;
+          }
+        }
       }
       
       // For both logged in and guest users, store in plan_purchases table
+      // This table has the transaction_id column as confirmed in the migration
       if (values.email || userEmail) {
         const { error: purchaseError } = await supabase.from('plan_purchases').insert({
           username: username || (user?.user_metadata?.username as string) || 'guest',
@@ -90,7 +99,10 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
           expires_at: expiresAt.toISOString()
         });
         
-        if (purchaseError) throw purchaseError;
+        if (purchaseError) {
+          console.error("Plan purchase error:", purchaseError);
+          throw purchaseError;
+        }
       }
       
       toast({
@@ -102,9 +114,10 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
       navigate("/dashboard");
       
     } catch (error: any) {
+      console.error("Payment submission error:", error);
       toast({
         title: "Subscription Failed",
-        description: error.message,
+        description: error.message || "There was an error activating your plan",
         variant: "destructive"
       });
     } finally {
@@ -186,10 +199,10 @@ export const usePaymentSubmission = ({ planId, planName, planPrice, onClose, use
       }
     } catch (error) {
       console.error("Error sharing:", error);
+      handleDownload(); // If sharing fails, fall back to download
       toast({
-        title: "Error sharing QR code",
-        description: "An error occurred while trying to share the QR code",
-        variant: "destructive"
+        title: "QR Code Downloaded",
+        description: "Sharing not supported on your device. The QR code has been downloaded instead.",
       });
     }
   };

@@ -1,14 +1,13 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { Copy, Download, Share, Phone } from 'lucide-react';
-import { toast } from 'sonner';
+import { Copy, Download, Share } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { PaymentForm } from './PaymentForm'; 
 import { useForm } from 'react-hook-form';
 import { PaymentFormValues, usePaymentSubmission } from './usePaymentSubmission';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { shareQRCode } from '@/utils/shareUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface QRCodePaymentModalProps {
@@ -51,10 +50,13 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
 
   const handleCopyUPI = () => {
     navigator.clipboard.writeText(upiId);
-    toast.success('UPI ID copied to clipboard');
+    toast({
+      title: "Copied",
+      description: "UPI ID copied to clipboard",
+    });
   };
 
-  // Use the uploaded QR code for the 10rs plan and existing QR for others
+  // Use the appropriate QR code based on the plan price
   const qrCodeSrc = planPrice === 10 
     ? "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png" 
     : planPrice === 50
@@ -64,24 +66,31 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
   // Enhanced QR code sharing function specifically for payment apps
   const handleShareQR = async () => {
     try {
-      // First try sharing the URL with custom text for payment context
+      // Payment-specific text for better context when sharing
+      const shareText = `Pay ₹${planPrice} for ${planName} plan on sharefile.lovable.app. Scan the QR code with your UPI app (GPay, PhonePe, etc).`;
+      const shareTitle = `Payment QR: ₹${planPrice} for ${planName}`;
+      
+      // First try sharing as a text link (most widely supported)
       if (navigator.share) {
         try {
           await navigator.share({
-            title: `Pay ₹${planPrice} for ${planName}`,
-            text: `Scan this QR code with GPay, PhonePe or your preferred UPI app to pay ₹${planPrice} for ${planName} on sharefile.lovable.app`,
+            title: shareTitle,
+            text: shareText,
             url: window.location.href
           });
-          toast.success("Payment link shared successfully");
+          toast({
+            title: "Shared",
+            description: "Payment link shared successfully",
+          });
           return;
         } catch (err) {
           console.error("Error sharing URL:", err);
-          // Continue to fallback methods if URL sharing fails
+          // Continue to file sharing if URL sharing fails
         }
       }
       
-      // If direct URL sharing fails or isn't supported, try sharing the QR image
-      if (qrImageRef.current) {
+      // If URL sharing isn't supported or fails, try sharing the QR image file
+      if (qrImageRef.current && navigator.canShare) {
         try {
           // Create a canvas from the QR code image
           const canvas = document.createElement('canvas');
@@ -89,7 +98,7 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
           
           if (!ctx) throw new Error("Could not get canvas context");
           
-          // Match canvas dimensions to image
+          // Set canvas dimensions to match the image
           canvas.width = qrImageRef.current.naturalWidth || 300;
           canvas.height = qrImageRef.current.naturalHeight || 300;
           
@@ -107,14 +116,17 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
           // Create file from blob
           const file = new File([blob], `payment-qr-code-${planId}.png`, { type: 'image/png' });
           
-          // Try to share file if supported
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          // Check if file sharing is supported
+          if (navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
-              title: `Payment QR Code for ${planName}`,
-              text: `Scan this QR code to pay ₹${planPrice} for ${planName}`
+              title: shareTitle,
+              text: shareText
             });
-            toast.success("QR code shared successfully");
+            toast({
+              title: "Shared",
+              description: "QR code shared successfully",
+            });
             return;
           }
         } catch (err) {
@@ -122,21 +134,21 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
         }
       }
       
-      // Final fallback - download the image
+      // Fall back to download if sharing isn't supported
       handleDownload();
-      toast.success("QR Code downloaded instead");
+      toast({
+        title: "Downloaded",
+        description: "QR code downloaded (sharing not supported on your device)",
+      });
       
     } catch (error) {
       console.error("Error sharing:", error);
-      toast.error("Could not share QR code");
-      
       // Ultimate fallback
-      try {
-        handleDownload();
-        toast.success("QR Code downloaded instead");
-      } catch (downloadError) {
-        toast.error("Could not download QR code");
-      }
+      handleDownload();
+      toast({
+        title: "Downloaded",
+        description: "QR code downloaded instead of shared due to an error",
+      });
     }
   };
 

@@ -9,8 +9,9 @@ import { shareApp } from "@/utils/shareUtils";
 export const WelcomeBanner = () => {
   const handleInviteFriends = async () => {
     try {
-      // This will trigger the native share dialog showing available apps
+      // Use the enhanced shareApp function that properly handles sharing
       const result = await shareApp();
+      
       if (result.success) {
         toast({
           title: "App Shared!",
@@ -21,9 +22,18 @@ export const WelcomeBanner = () => {
           title: "Sharing Failed",
           description: "Could not share app, the link has been copied to clipboard instead",
         });
+        
+        // Final fallback - attempt to copy to clipboard
+        navigator.clipboard.writeText(window.location.origin).then(() => {
+          toast({
+            title: "Link Copied",
+            description: "App link copied to clipboard",
+          });
+        });
       }
     } catch (error) {
       console.error("Error sharing app:", error);
+      
       // Final fallback
       navigator.clipboard.writeText(window.location.origin).then(() => {
         toast({

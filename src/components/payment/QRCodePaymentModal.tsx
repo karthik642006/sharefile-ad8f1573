@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Copy, Download, Share } from 'lucide-react';
@@ -8,6 +8,7 @@ import { PaymentForm } from './PaymentForm';
 import { useForm } from 'react-hook-form';
 import { PaymentFormValues, usePaymentSubmission } from './usePaymentSubmission';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { shareQRCode } from '@/utils/shareUtils';
 
 interface QRCodePaymentModalProps {
   isOpen: boolean;
@@ -26,6 +27,9 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
   planName = "Yearly Plan",
   upiId = 'sharefile.lovable.app@okicici',
 }) => {
+  // Create a reference to the QR code image
+  const qrImageRef = useRef<HTMLImageElement | null>(null);
+  
   const form = useForm<PaymentFormValues>({
     defaultValues: {
       transactionId: '',
@@ -45,49 +49,43 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     toast.success('UPI ID copied to clipboard');
   };
 
+  // Use the uploaded QR code for the 10rs plan and existing QR for others
+  const qrCodeSrc = planPrice === 10 
+    ? "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png" 
+    : planPrice === 50
+      ? "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png"
+      : "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+  
   // Enhanced QR code sharing function
   const handleShareQR = async () => {
     try {
-      // Determine which QR code to share based on the plan
-      let qrImagePath;
+      // Create a canvas element from the QR code image
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
       
-      if (planPrice === 10) {
-        qrImagePath = "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png";
-      } else if (planPrice === 50) {
-        qrImagePath = "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png";
-      } else {
-        qrImagePath = "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
+      if (!qrImageRef.current || !context) {
+        throw new Error('Could not create canvas context');
       }
-        
-      // Create a blob from the QR code image
-      const response = await fetch(qrImagePath);
-      const blob = await response.blob();
       
-      // Create a file from the blob
-      const file = new File([blob], `payment-qr-code-${planId}.png`, { type: blob.type });
+      // Set canvas dimensions to match the QR code image
+      canvas.width = qrImageRef.current.naturalWidth || 300;
+      canvas.height = qrImageRef.current.naturalHeight || 300;
       
-      // Check if browser supports sharing files
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: `Payment QR Code for ${planName}`,
-          text: `Scan this QR code to pay ₹${planPrice} for ${planName} plan`,
-          files: [file],
-        });
-        
-        toast.success('QR Code shared successfully');
-      } else if (navigator.share) {
-        // Fallback to regular share if file sharing not supported
-        await navigator.share({
-          title: `Payment QR Code for ${planName}`,
-          text: `Scan this QR code to pay ₹${planPrice} for ${planName} plan on sharefile.lovable.app`,
-          url: window.location.href,
-        });
-        
-        toast.success('QR Code link shared successfully');
+      // Draw the image onto the canvas
+      context.drawImage(qrImageRef.current, 0, 0);
+      
+      // Share the QR code using our utility function
+      const shareResult = await shareQRCode(canvas, 
+        `Payment QR Code for ${planName}`,
+        `Scan this QR code to pay ₹${planPrice} for ${planName} plan on sharefile.lovable.app`
+      );
+      
+      if (shareResult.success) {
+        toast.success(shareResult.message);
       } else {
-        // If sharing isn't supported at all, download instead
+        // If sharing fails, try to download instead
         handleDownload();
-        toast.success('QR Code downloaded instead (sharing not supported on this device)');
+        toast.success('QR Code downloaded instead');
       }
     } catch (error) {
       console.error("Error sharing:", error);
@@ -103,13 +101,6 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
     }
   };
 
-  // Use the uploaded QR code for the 10rs plan and existing QR for others
-  const qrCodeSrc = planPrice === 10 
-    ? "/lovable-uploads/6ac08848-8cdd-4288-9837-15346b20265a.png" 
-    : planPrice === 50
-      ? "/lovable-uploads/a0e9067c-ae32-4803-be46-85384a7b9cc2.png"
-      : "/lovable-uploads/5a257542-3444-442d-9615-2d39134d3474.png";
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -124,9 +115,11 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
           <div className="flex flex-col items-center space-y-4 p-4 bg-gray-900 rounded-lg">
             <div className="bg-white p-2 rounded-lg">
               <img 
+                ref={qrImageRef}
                 src={qrCodeSrc} 
                 alt="Payment QR Code"
                 className="w-64 h-64 object-contain payment-qr-image"
+                crossOrigin="anonymous"
               />
             </div>
             <div className="flex items-center space-x-2 text-white">

@@ -70,14 +70,30 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
     // Create file from blob
     const file = new File([blob], 'qrcode.png', { type: 'image/png' });
     
-    // Use Web Share API if available
+    // Check if browser supports file sharing
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: title || 'Share QR Code',
-        text: text || 'Scan this QR code',
-        files: [file]
-      });
-      return { success: true, message: 'QR Code shared successfully' };
+      try {
+        await navigator.share({
+          title: title || 'Share QR Code',
+          text: text || 'Scan this QR code',
+          files: [file]
+        });
+        return { success: true, message: 'QR Code shared successfully' };
+      } catch (shareError) {
+        console.error("Error in Web Share API:", shareError);
+        
+        // If there's an error with file sharing, try URL sharing
+        if (navigator.share) {
+          await navigator.share({
+            title: title || 'Share QR Code',
+            text: text || 'Scan this QR code',
+            url: window.location.href
+          });
+          return { success: true, message: 'QR Code link shared successfully' };
+        }
+        
+        throw new Error('Web Share API failed');
+      }
     } else if (navigator.share) {
       // Fallback to sharing URL if file sharing is not supported
       await navigator.share({
@@ -109,9 +125,9 @@ export const shareApp = async () => {
   const title = 'ShareFile - Securely share your files';
   const text = 'Check out ShareFile, a secure way to share your files instantly! Download now at ' + appUrl;
   
-  // Check if the browser supports the Web Share API
-  if (navigator.share) {
-    try {
+  try {
+    // Check if the browser supports the Web Share API
+    if (navigator.share) {
       // This will trigger the native share dialog showing available apps
       await navigator.share({
         title: title,
@@ -119,25 +135,20 @@ export const shareApp = async () => {
         url: appUrl
       });
       return { success: true, message: 'App shared successfully' };
-    } catch (error) {
-      console.error('Error sharing app:', error);
-      
-      // Fallback to clipboard
-      try {
-        await navigator.clipboard.writeText(appUrl);
-        return { success: true, message: 'App URL copied to clipboard' };
-      } catch (clipboardError) {
-        return { success: false, message: 'Failed to share app' };
-      }
+    } else {
+      // Fallback for browsers that don't support the Web Share API
+      await navigator.clipboard.writeText(appUrl);
+      return { success: true, message: 'App URL copied to clipboard' };
     }
-  } else {
-    // Fallback for browsers that don't support the Web Share API
+  } catch (error) {
+    console.error('Error sharing app:', error);
+    
+    // Fallback to clipboard
     try {
       await navigator.clipboard.writeText(appUrl);
       return { success: true, message: 'App URL copied to clipboard' };
-    } catch (error) {
-      console.error('Error copying URL:', error);
-      return { success: false, message: 'Failed to copy app URL to clipboard' };
+    } catch (clipboardError) {
+      return { success: false, message: 'Failed to share app' };
     }
   }
 };

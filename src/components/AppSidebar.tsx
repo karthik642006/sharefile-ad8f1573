@@ -32,10 +32,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {sidebarItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link to={item.url} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${location.pathname === item.url ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted"}`}>
-                      <item.icon size={20} />
-                      
-                    </Link>
+                    
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>

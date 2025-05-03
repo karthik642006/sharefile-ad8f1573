@@ -16,6 +16,25 @@ interface PaymentFormProps {
 export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) => {
   const { user } = useAuth();
   const isLoggedIn = !!user;
+  
+  // Get current values from the form to check button enabled state
+  const transactionId = form.watch("transactionId") || "";
+  const username = form.watch("username") || "";
+  const email = form.watch("email") || "";
+  
+  // Determine if button should be enabled
+  const isButtonEnabled = () => {
+    // Transaction ID must be exactly 12 digits
+    const isValidTransactionId = /^\d{12}$/.test(transactionId);
+    
+    // If logged in, only need valid transaction ID
+    if (isLoggedIn) {
+      return isValidTransactionId;
+    }
+    
+    // If not logged in, need valid transaction ID, username and email
+    return isValidTransactionId && username.trim() !== "" && email.trim() !== "";
+  };
 
   return (
     <Form {...form}>
@@ -31,7 +50,14 @@ export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) 
                   <Input
                     placeholder="123456789012"
                     maxLength={12}
+                    pattern="\d{12}"
+                    inputMode="numeric"
                     {...field}
+                    onChange={(e) => {
+                      // Only allow digits
+                      const value = e.target.value.replace(/\D/g, '');
+                      field.onChange(value);
+                    }}
                   />
                 </FormControl>
                 <p className="text-xs text-gray-500">Enter the transaction ID from your UPI app after payment</p>
@@ -99,11 +125,7 @@ export const PaymentForm = ({ form, isProcessing, onSubmit }: PaymentFormProps) 
           <Button
             type="submit"
             className="w-full bg-[#33C3F0] hover:bg-[#1493c7]"
-            disabled={isProcessing || 
-              !form.getValues("transactionId") || 
-              form.getValues("transactionId").length !== 12 ||
-              (!isLoggedIn && (!form.getValues("username") || !form.getValues("email")))
-            }
+            disabled={isProcessing || !isButtonEnabled()}
           >
             {isProcessing ? "Processing..." : "Deposit & Activate Plan"}
           </Button>

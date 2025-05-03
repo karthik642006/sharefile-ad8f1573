@@ -64,49 +64,78 @@ export const QRCodePaymentModal: React.FC<QRCodePaymentModalProps> = ({
   // Enhanced QR code sharing function specifically for payment apps
   const handleShareQR = async () => {
     try {
-      // For payment apps, we want to use the regular share API with payment-specific text
+      // First try sharing the URL with custom text for payment context
       if (navigator.share) {
-        await navigator.share({
-          title: `Pay ₹${planPrice} for ${planName}`,
-          text: `Scan this QR code with GPay, PhonePe or your preferred UPI app to pay ₹${planPrice} for ${planName}`,
-          url: window.location.href
-        });
-        toast.success("Choose your payment app to share");
-        return;
+        try {
+          await navigator.share({
+            title: `Pay ₹${planPrice} for ${planName}`,
+            text: `Scan this QR code with GPay, PhonePe or your preferred UPI app to pay ₹${planPrice} for ${planName} on sharefile.lovable.app`,
+            url: window.location.href
+          });
+          toast.success("Payment link shared successfully");
+          return;
+        } catch (err) {
+          console.error("Error sharing URL:", err);
+          // Continue to fallback methods if URL sharing fails
+        }
       }
       
-      // Fall back to canvas sharing if Web Share API fails
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
-      if (!qrImageRef.current || !context) {
-        throw new Error('Could not create canvas context');
+      // If direct URL sharing fails or isn't supported, try sharing the QR image
+      if (qrImageRef.current) {
+        try {
+          // Create a canvas from the QR code image
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) throw new Error("Could not get canvas context");
+          
+          // Match canvas dimensions to image
+          canvas.width = qrImageRef.current.naturalWidth || 300;
+          canvas.height = qrImageRef.current.naturalHeight || 300;
+          
+          // Draw the image onto the canvas
+          ctx.drawImage(qrImageRef.current, 0, 0, canvas.width, canvas.height);
+          
+          // Convert canvas to blob
+          const blob = await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob((b) => {
+              if (b) resolve(b);
+              else reject(new Error("Failed to create blob"));
+            }, 'image/png');
+          });
+          
+          // Create file from blob
+          const file = new File([blob], `payment-qr-code-${planId}.png`, { type: 'image/png' });
+          
+          // Try to share file if supported
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Payment QR Code for ${planName}`,
+              text: `Scan this QR code to pay ₹${planPrice} for ${planName}`
+            });
+            toast.success("QR code shared successfully");
+            return;
+          }
+        } catch (err) {
+          console.error("Error sharing QR image:", err);
+        }
       }
       
-      canvas.width = qrImageRef.current.naturalWidth || 300;
-      canvas.height = qrImageRef.current.naturalHeight || 300;
-      context.drawImage(qrImageRef.current, 0, 0);
+      // Final fallback - download the image
+      handleDownload();
+      toast.success("QR Code downloaded instead");
       
-      const shareResult = await shareQRCode(canvas, 
-        `Payment QR Code for ${planName}`,
-        `Scan this QR code with GPay, PhonePe or your preferred UPI app to pay ₹${planPrice}`
-      );
-      
-      if (shareResult.success) {
-        toast.success(shareResult.message);
-      } else {
-        handleDownload();
-        toast.success('QR Code downloaded instead');
-      }
     } catch (error) {
       console.error("Error sharing:", error);
-      toast.error('Failed to share QR code');
+      toast.error("Could not share QR code");
       
+      // Ultimate fallback
       try {
         handleDownload();
-        toast.success('QR Code downloaded instead');
+        toast.success("QR Code downloaded instead");
       } catch (downloadError) {
-        toast.error('Could not download QR code');
+        toast.error("Could not download QR code");
       }
     }
   };

@@ -70,49 +70,47 @@ export const shareQRCode = async (qrCanvas: HTMLCanvasElement, title?: string, t
     // Create file from blob
     const file = new File([blob], 'qrcode.png', { type: 'image/png' });
     
-    // Check if browser supports file sharing
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    // Try native sharing with files first for payment apps
+    if (navigator.share) {
       try {
+        // Try direct URL sharing first (works best with most payment apps)
         await navigator.share({
           title: title || 'Pay using UPI app',
-          text: text || 'Scan this QR code with your UPI payment app',
-          files: [file]
+          text: text || 'Use GPay, PhonePe or your preferred UPI app',
+          url: window.location.href
         });
-        return { success: true, message: 'QR Code shared successfully' };
-      } catch (shareError) {
-        console.error("Error in Web Share API:", shareError);
+        return { success: true, message: 'Payment link shared successfully' };
+      } catch (urlError) {
+        console.error("Error sharing URL:", urlError);
         
-        // If there's an error with file sharing, try URL sharing
-        if (navigator.share) {
-          await navigator.share({
-            title: title || 'Pay using UPI app',
-            text: text || 'Use your favorite payment app to scan this QR code',
-            url: window.location.href
-          });
-          return { success: true, message: 'QR Code link shared successfully' };
+        // If URL sharing fails, try file sharing if supported
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: title || 'Pay using UPI app',
+              text: text || 'Scan this QR code with your UPI payment app'
+            });
+            return { success: true, message: 'QR Code shared successfully' };
+          } catch (fileError) {
+            console.error("Error sharing file:", fileError);
+            throw fileError;
+          }
+        } else {
+          throw new Error("File sharing not supported");
         }
-        
-        throw new Error('Web Share API failed');
       }
-    } else if (navigator.share) {
-      // Fallback to sharing URL if file sharing is not supported
-      await navigator.share({
-        title: title || 'Pay using UPI app',
-        text: text || 'Use GPay, PhonePe or your preferred UPI app',
-        url: window.location.href
-      });
-      return { success: true, message: 'QR Code link shared successfully' };
-    } else {
-      // Fallback if Web Share API is not supported
-      const dataUrl = qrCanvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = 'qrcode.png';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return { success: true, message: 'QR Code downloaded successfully' };
     }
+    
+    // Fallback to download if sharing not supported
+    const dataUrl = qrCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'qrcode.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return { success: true, message: 'QR Code downloaded successfully' };
   } catch (error) {
     console.error('Error sharing QR code:', error);
     return { success: false, message: 'Failed to share QR Code' };
@@ -150,5 +148,92 @@ export const shareApp = async () => {
     } catch (clipboardError) {
       return { success: false, message: 'Failed to share app' };
     }
+  }
+};
+
+// New helper function for direct UPI app sharing (GPay, PhonePe, etc)
+export const sharePaymentQR = async (qrImageSrc: string, amount: number, description: string) => {
+  try {
+    // First try sharing the URL (best for payment apps)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Pay ₹${amount} via UPI`,
+          text: `${description}. Scan QR code with GPay, PhonePe or any UPI app`,
+          url: window.location.href
+        });
+        return { success: true, message: 'Payment link shared successfully' };
+      } catch (err) {
+        console.error("URL sharing failed:", err);
+      }
+    }
+    
+    // If URL sharing fails, try image sharing
+    // First, create an image element and load the QR code
+    const img = new Image();
+    
+    // Create a promise to wait for image loading
+    const imageLoaded = new Promise((resolve, reject) => {
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to load QR image"));
+    });
+    
+    // Set image source and start loading
+    img.src = qrImageSrc;
+    img.crossOrigin = "anonymous";
+    
+    // Wait for image to load
+    await imageLoaded;
+    
+    // Create a canvas and draw the image
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error("Could not get canvas context");
+    }
+    
+    ctx.drawImage(img, 0, 0);
+    
+    // Convert to blob and file
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error("Failed to create blob"));
+      }, 'image/png');
+    });
+    
+    const file = new File([blob], 'payment_qr.png', { type: 'image/png' });
+    
+    // Try file sharing if supported
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `Pay ₹${amount} via UPI`,
+          text: description
+        });
+        return { success: true, message: 'QR code shared successfully' };
+      } catch (fileError) {
+        console.error("File sharing failed:", fileError);
+        throw fileError;
+      }
+    }
+    
+    // Final fallback - download
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'payment_qr.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return { success: true, message: 'QR code downloaded' };
+    
+  } catch (error) {
+    console.error("Error in sharePaymentQR:", error);
+    return { success: false, message: 'Failed to share payment QR' };
   }
 };

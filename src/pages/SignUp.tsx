@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileText, Mail, Lock, User, Check, KeyRound } from "lucide-react";
@@ -22,8 +22,30 @@ const SignUp = () => {
     confirmProfilePassword: ""
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, checkUsernameAvailability } = useAuth();
+
+  // Handle username availability check
+  useEffect(() => {
+    const delayTimer = setTimeout(async () => {
+      if (username && username.length >= 3) {
+        setIsCheckingUsername(true);
+        const available = await checkUsernameAvailability(username);
+        setUsernameAvailable(available);
+        setIsCheckingUsername(false);
+        
+        if (!available) {
+          setErrors(prev => ({...prev, username: "This username is already taken."}));
+        } else {
+          setErrors(prev => ({...prev, username: ""}));
+        }
+      }
+    }, 500);
+    
+    return () => clearTimeout(delayTimer);
+  }, [username, checkUsernameAvailability]);
 
   const validateForm = () => {
     let valid = true;
@@ -41,6 +63,9 @@ const SignUp = () => {
       valid = false;
     } else if (username.length < 3) {
       newErrors.username = "Username must be at least 3 characters.";
+      valid = false;
+    } else if (usernameAvailable === false) {
+      newErrors.username = "This username is already taken.";
       valid = false;
     }
 
@@ -97,15 +122,16 @@ const SignUp = () => {
       const { error } = await signUp(email, password, username, profilePassword);
       
       if (error) {
-        if (error.message.includes("already registered")) {
+        if (error.code === "USERNAME_TAKEN") {
+          setErrors({
+            ...errors,
+            username: error.message
+          });
+          setUsernameAvailable(false);
+        } else if (error.message?.includes("already registered")) {
           setErrors({
             ...errors,
             email: "This email is already registered."
-          });
-        } else if (error.message.includes("username")) {
-          setErrors({
-            ...errors,
-            username: "This username is already taken."
           });
         } else {
           toast({
@@ -125,6 +151,15 @@ const SignUp = () => {
     }
   }
 
+  const renderUsernameStatus = () => {
+    if (isCheckingUsername) {
+      return <span className="text-sm text-yellow-500">Checking availability...</span>;
+    } else if (usernameAvailable === true && username.length >= 3) {
+      return <span className="text-sm text-green-500 flex items-center gap-1"><Check size={14} /> Username is available</span>;
+    }
+    return null;
+  };
+
   return (
     <section className="flex flex-col items-center min-h-screen justify-center bg-gradient-to-br from-[#f1f0fb] via-[#e5deff] to-[#d3e4fd] animate-fade-in">
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md flex flex-col items-center gap-4">
@@ -141,12 +176,17 @@ const SignUp = () => {
               placeholder="Choose a unique username"
               onChange={e => {
                 setUsername(e.target.value);
+                setUsernameAvailable(null);
                 if (errors.username) setErrors({...errors, username: ""});
               }}
-              className={errors.username ? "border-red-400" : ""}
+              className={errors.username ? "border-red-400" : usernameAvailable ? "border-green-400" : ""}
               disabled={isLoading}
             />
-            {errors.username && <span className="text-sm text-red-500">{errors.username}</span>}
+            {errors.username ? (
+              <span className="text-sm text-red-500">{errors.username}</span>
+            ) : (
+              renderUsernameStatus()
+            )}
           </div>
           
           <div className="space-y-1">
@@ -242,7 +282,7 @@ const SignUp = () => {
           <Button 
             type="submit" 
             className="mt-4 bg-[#9b87f5] hover:bg-[#7E69AB] text-white font-bold w-full rounded-lg"
-            disabled={isLoading}
+            disabled={isLoading || isCheckingUsername}
           >
             {isLoading ? "Signing up..." : "Sign Up"}
           </Button>

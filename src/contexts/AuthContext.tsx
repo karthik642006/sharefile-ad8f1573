@@ -13,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any | null }>;
   signOut: () => Promise<void>;
   updateProfilePassword: (newPassword: string) => Promise<{ error: any | null }>;
+  checkUsernameAvailability: (username: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,14 +64,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
+  const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username.trim().toLowerCase())
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 is the error code when no rows are returned
+        console.error("Error checking username:", error);
+        return false;
+      }
+      
+      // If data exists, username is taken
+      return !data;
+    } catch (error) {
+      console.error("Error in checkUsernameAvailability:", error);
+      return false;
+    }
+  };
+
   const signUp = async (email: string, password: string, username: string, profilePassword: string) => {
     try {
+      // Check if username is available
+      const isAvailable = await checkUsernameAvailability(username);
+      if (!isAvailable) {
+        return { 
+          error: { 
+            message: "This username is already taken. Please choose another username.", 
+            code: "USERNAME_TAKEN" 
+          } 
+        };
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username,
+            username: username.toLowerCase(),
             profile_password: profilePassword
           }
         }
@@ -80,7 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ profile_password: profilePassword })
-          .eq('username', username);
+          .eq('username', username.toLowerCase());
 
         if (profileError) {
           toast({
@@ -158,7 +192,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signUp, 
       signIn, 
       signOut,
-      updateProfilePassword 
+      updateProfilePassword,
+      checkUsernameAvailability
     }}>
       {children}
     </AuthContext.Provider>

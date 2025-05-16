@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfilePassword: (newPassword: string) => Promise<{ error: any | null }>;
   checkUsernameAvailability: (username: string) => Promise<boolean>;
+  accessProfileWithPassword: (password: string) => Promise<{ data: any | null, error: any | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -184,6 +184,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const accessProfileWithPassword = async (password: string) => {
+    try {
+      // Find the profile with this password
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('profile_password', password)
+        .single();
+
+      if (error) {
+        console.error("Error accessing profile with password:", error);
+        return { data: null, error: { message: "Invalid profile password or profile not found" } };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error("Error in accessProfileWithPassword:", error);
+      return { data: null, error };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       session, 
@@ -193,7 +214,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn, 
       signOut,
       updateProfilePassword,
-      checkUsernameAvailability
+      checkUsernameAvailability,
+      accessProfileWithPassword
     }}>
       {children}
     </AuthContext.Provider>

@@ -7,6 +7,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { FileList } from "@/components/profile/FileList";
 import { PasswordSection } from "@/components/profile/PasswordSection";
 import { useFileStorage } from "@/hooks/useFileStorage";
+import { ProfilePasswordAccess } from "@/components/profile/ProfilePasswordAccess";
 
 interface ProfileData {
   id: string;
@@ -31,6 +32,7 @@ const Profile = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   
   const { user } = useAuth();
   const location = useLocation();
@@ -38,66 +40,76 @@ const Profile = () => {
   const profileId = queryParams.get('id') || (user ? user.id : null);
   
   useEffect(() => {
+    // If no profile ID from query params or current user,
+    // show the password entry form
     if (!profileId) {
-      setError("No profile specified");
+      setShowPasswordForm(true);
       setIsLoadingProfile(false);
       return;
     }
     
-    async function fetchProfileData() {
-      try {
-        setIsLoadingProfile(true);
-
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', profileId)
-          .single();
-
-        if (error) throw error;
-
-        setProfileData(data);
-        
-        if (data.avatar_url) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('shared-files')
-            .getPublicUrl(data.avatar_url);
-          setProfileImg(publicUrl);
-        }
-
-        await fetchUserFiles(profileId);
-      } catch (err: any) {
-        setError(err.message);
-        console.error("Error fetching profile:", err);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    }
-
-    async function fetchUserFiles(userId: string) {
-      try {
-        setIsLoadingFiles(true);
-
-        const { data, error } = await supabase
-          .from('shared_files')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        setUserFiles(data || []);
-      } catch (err) {
-        console.error("Error fetching files:", err);
-      } finally {
-        setIsLoadingFiles(false);
-      }
-    }
-
-    fetchProfileData();
-    const refreshInterval = setInterval(() => fetchUserFiles(profileId), 15000);
-    return () => clearInterval(refreshInterval);
+    fetchProfileData(profileId);
   }, [profileId]);
+
+  const fetchProfileData = async (id: string) => {
+    try {
+      setIsLoadingProfile(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      setProfileData(data);
+      
+      if (data.avatar_url) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('shared-files')
+          .getPublicUrl(data.avatar_url);
+        setProfileImg(publicUrl);
+      }
+
+      await fetchUserFiles(id);
+    } catch (err: any) {
+      setError(err.message);
+      console.error("Error fetching profile:", err);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }
+
+  const fetchUserFiles = async (userId: string) => {
+    try {
+      setIsLoadingFiles(true);
+
+      const { data, error } = await supabase
+        .from('shared_files')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setUserFiles(data || []);
+    } catch (err) {
+      console.error("Error fetching files:", err);
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  }
+
+  const handleAccessWithPassword = async (profileData: ProfileData) => {
+    setShowPasswordForm(false);
+    await fetchProfileData(profileData.id);
+  };
+
+  if (showPasswordForm) {
+    return <ProfilePasswordAccess onProfileAccessed={handleAccessWithPassword} />;
+  }
 
   if (isLoadingProfile) {
     return (
@@ -112,6 +124,12 @@ const Profile = () => {
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <h2 className="text-2xl font-bold text-red-500 mb-4">Error Loading Profile</h2>
         <p>{error || 'Profile not found'}</p>
+        <button 
+          onClick={() => setShowPasswordForm(true)} 
+          className="mt-4 bg-[#9b87f5] text-white px-4 py-2 rounded hover:bg-[#7E69AB] transition"
+        >
+          Try a different profile password
+        </button>
       </div>
     );
   }
@@ -132,7 +150,7 @@ const Profile = () => {
           <FileList 
             userFiles={userFiles} 
             setUserFiles={setUserFiles}
-            profileId={profileId}
+            profileId={profileData.id}
             isLoadingFiles={isLoadingFiles}
           />
         </div>
